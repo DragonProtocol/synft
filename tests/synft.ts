@@ -1,6 +1,9 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { createMint, mintTo, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { PublicKey, SystemProgram, Transaction, Connection, Commitment } from '@solana/web3.js';
+
+import { TOKEN_PROGRAM_ID, createMint, mintTo, getAccount,Account, setAuthority,AuthorityType,
+   getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
 import { Synft } from "../target/types/synft";
 import { assert } from "chai";
@@ -25,8 +28,8 @@ describe("synft", () => {
   const payer = anchor.web3.Keypair.generate();
   let mint1 = null;
   let mint2 = null; 
-  let tokenAccount1 = null;
-  let tokenAccount2 = null;
+  let tokenAccount1 = null as Account;
+  let tokenAccount2 = null as Account;
 
 
   it("Is initialized!", async () => {
@@ -88,7 +91,50 @@ describe("synft", () => {
    * check NFT owner now becomes PDA
   */
   it("Inject", async () => {
-
+    let connection = anchor.getProvider().connection;
+    const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        tokenAccount2.address.toBuffer()      
+      ],
+      program.programId
+    );
+    console.log("_metadata_pda is ", _metadata_pda.toString());
+    console.log(_metadata_bump);
+    console.log("DONE")
+    let initTx = await program.rpc.initializeInject( 
+      true, _metadata_bump,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          childTokenAccount: tokenAccount1.address,
+          parentTokenAccount: tokenAccount2.address,
+          childrenMeta: _metadata_pda,
+     
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      }
+    );
+    console.log('initTx :', initTx);
+    let childrenMeta = await program.account.childrenMetadata.fetch(_metadata_pda);
+    assert.ok(childrenMeta.reversable == true);
+    console.log("before setAuthority ", tokenAccount1.owner.toString());
+    assert.ok(childrenMeta.bump == _metadata_bump);
+    await setAuthority(
+      connection,
+      user1,
+      tokenAccount1.address,
+      user1,
+      AuthorityType.AccountOwner,
+      _metadata_pda, 
+      [],
+      undefined,
+      TOKEN_PROGRAM_ID);
+    tokenAccount1 = await getAccount(connection, tokenAccount1.address);
+    assert.ok(tokenAccount1.owner.equals(_metadata_pda)); 
   });
 
   /**

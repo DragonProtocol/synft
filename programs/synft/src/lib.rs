@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, SetAuthority, TokenAccount}; //, Transfer,CloseAccount, Mint
-use spl_token::instruction::AuthorityType;
+use anchor_spl::token::{TokenAccount}; //self, SetAuthority, Transfer,CloseAccount, Mint
+// use spl_token::instruction::AuthorityType;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -17,11 +17,11 @@ pub mod synft {
     ) -> Result<()> {
         ctx.accounts.children_meta.reversable = reversable;
         ctx.accounts.children_meta.bump = bump;
-        ctx.accounts.children_meta.child = *ctx.accounts.child_account.to_account_info().key;
-        let parent_key = ctx.accounts.parent_account.to_account_info().key.as_ref();
+        ctx.accounts.children_meta.child = *ctx.accounts.child_token_account.to_account_info().key;
+        let parent_key = ctx.accounts.parent_token_account.to_account_info().key.as_ref();
         // TODO: support both SPL and NFT later
-        let (children_meta_pda, pda_bump) = Pubkey::find_program_address(
-            &[&CHILDREN_PDA_SEED[..], parent_key, &[bump]],
+        let (_, pda_bump) = Pubkey::find_program_address(
+            &[&CHILDREN_PDA_SEED[..], parent_key],
             &(ctx.program_id),
         );
         if bump != pda_bump {
@@ -29,11 +29,12 @@ pub mod synft {
         }
 
         // assign token to PDA
-        token::set_authority(
-            ctx.accounts.into_set_authority_context(),
-            AuthorityType::AccountOwner,
-            Some(children_meta_pda),
-        )?;
+        // This will NOT work because the authority at this point is still to the previous USER
+        // token::set_authority(
+        //     ctx.accounts.into_set_authority_context(),
+        //     AuthorityType::AccountOwner,
+        //     Some(children_meta_pda),
+        // )?;
 
         Ok(())
     }
@@ -55,14 +56,14 @@ pub struct InitializeInject<'info> {
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
     pub current_owner: Signer<'info>,
-    pub child_account: Account<'info, TokenAccount>,
-    pub parent_account: Account<'info, TokenAccount>,
+    pub child_token_account: Account<'info, TokenAccount>,
+    pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = current_owner,
         // space: 8 discriminator + 1 reversable + 1 index + 32 pubkey + 1 bump
         space = 8+1+1+32+1,
-        seeds = [b"children-of", parent_account.key().as_ref()], bump
+        seeds = [b"children-of", parent_token_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadata>>,
 
@@ -73,15 +74,15 @@ pub struct InitializeInject<'info> {
     pub token_program: AccountInfo<'info>,
 }
 
-impl<'info> InitializeInject<'info> {
-    fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
-        let cpi_accounts = SetAuthority {
-            account_or_mint: self.child_account.to_account_info().clone(),
-            current_authority: self.current_owner.to_account_info().clone(),
-        };
-        CpiContext::new(self.token_program.clone(), cpi_accounts)
-    }
-}
+// impl<'info> InitializeInject<'info> {
+//     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
+//         let cpi_accounts = SetAuthority {
+//             account_or_mint: self.child_token_account.to_account_info().clone(),
+//             current_authority: self.current_owner.to_account_info().clone(),
+//         };
+//         CpiContext::new(self.token_program.clone(), cpi_accounts)
+//     }
+// }
 
 #[derive(Accounts)]
 pub struct Inject {
