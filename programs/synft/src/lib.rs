@@ -27,14 +27,13 @@ pub mod synft {
             Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
         if bump != pda_bump {
             return err!(ErrorCode::InvalidMetadataBump);
-        } 
+        }
 
         token::set_authority(
             ctx.accounts.into_set_authority_context(), // use exended priviledge from current instruction for CPI
             AuthorityType::AccountOwner,
             Some(*ctx.accounts.children_meta.to_account_info().key),
         )?;
-        // TODO: set authority here instead of in the frontend
         Ok(())
     }
 
