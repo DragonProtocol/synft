@@ -30,7 +30,7 @@ pub mod synft {
         } 
 
         token::set_authority(
-            ctx.accounts.into_set_authority_context(),
+            ctx.accounts.into_set_authority_context(), // use exended priviledge from current instruction for CPI
             AuthorityType::AccountOwner,
             Some(*ctx.accounts.children_meta.to_account_info().key),
         )?;
@@ -68,7 +68,7 @@ pub mod synft {
         token::set_authority(
             ctx.accounts
                 .into_set_authority_context()
-                .with_signer(&[&seeds[..]]),
+                .with_signer(&[&seeds[..]]), // use PDA as signer
             AuthorityType::AccountOwner,
             Some(*ctx.accounts.current_owner.to_account_info().key),
         )?;
