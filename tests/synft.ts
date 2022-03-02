@@ -123,16 +123,6 @@ describe("synft", () => {
     assert.ok(childrenMeta.reversable == true);
     console.log("before setAuthority ", tokenAccount1.owner.toString());
     assert.ok(childrenMeta.bump == _metadata_bump);
-    await setAuthority(
-      connection,
-      user1,
-      tokenAccount1.address,
-      user1,
-      AuthorityType.AccountOwner,
-      _metadata_pda, 
-      [],
-      undefined,
-      TOKEN_PROGRAM_ID);
     tokenAccount1 = await getAccount(connection, tokenAccount1.address);
     assert.ok(tokenAccount1.owner.equals(_metadata_pda)); 
   });

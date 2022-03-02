@@ -27,7 +27,13 @@ pub mod synft {
             Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
         if bump != pda_bump {
             return err!(ErrorCode::InvalidMetadataBump);
-        }
+        } 
+
+        token::set_authority(
+            ctx.accounts.into_set_authority_context(),
+            AuthorityType::AccountOwner,
+            Some(*ctx.accounts.children_meta.to_account_info().key),
+        )?;
         // TODO: set authority here instead of in the frontend
         Ok(())
     }
@@ -38,24 +44,36 @@ pub mod synft {
     }
 
     pub fn extract(ctx: Context<Extract>, _bump: u8) -> Result<()> {
-        if !ctx.accounts.current_owner.to_account_info().key.eq(&ctx.accounts.parent_token_account.owner)  {
+        if !ctx
+            .accounts
+            .current_owner
+            .to_account_info()
+            .key
+            .eq(&ctx.accounts.parent_token_account.owner)
+        {
             // TODO: use account(constraints = to check)
             return err!(ErrorCode::InvalidAuthority);
         }
         let seeds = &[
             &CHILDREN_PDA_SEED[..],
-            ctx.accounts.parent_token_account.to_account_info().key.as_ref(),
+            ctx.accounts
+                .parent_token_account
+                .to_account_info()
+                .key
+                .as_ref(),
             &[_bump],
         ];
 
         // assign token from PDA to signer
         token::set_authority(
-            ctx.accounts.into_set_authority_context().with_signer(&[&seeds[..]]),
+            ctx.accounts
+                .into_set_authority_context()
+                .with_signer(&[&seeds[..]]),
             AuthorityType::AccountOwner,
             Some(*ctx.accounts.current_owner.to_account_info().key),
         )?;
 
-        // close meta_data account        
+        // close meta_data account
         Ok(())
     }
 }
@@ -66,6 +84,7 @@ pub struct InitializeInject<'info> {
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
     pub current_owner: Signer<'info>,
+    #[account(mut)]
     pub child_token_account: Account<'info, TokenAccount>,
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
@@ -82,6 +101,17 @@ pub struct InitializeInject<'info> {
     pub rent: Sysvar<'info, Rent>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_program: AccountInfo<'info>,
+}
+
+impl<'info> InitializeInject<'info> {
+    fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
+        let cpi_accounts = SetAuthority {
+            account_or_mint: self.child_token_account.to_account_info(),
+            current_authority: self.current_owner.to_account_info(),
+        };
+
+        CpiContext::new(self.token_program.clone(), cpi_accounts)
+    }
 }
 
 #[derive(Accounts)]
@@ -142,5 +172,5 @@ pub enum ErrorCode {
     #[msg("The bump passed in does not match the bump in the PDA")]
     InvalidMetadataBump,
     #[msg("Current owner is not the authority of the parent token")]
-    InvalidAuthority
+    InvalidAuthority,
 }
