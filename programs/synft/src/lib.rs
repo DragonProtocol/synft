@@ -44,16 +44,6 @@ pub mod synft {
     }
 
     pub fn extract(ctx: Context<Extract>, _bump: u8) -> Result<()> {
-        if !ctx
-            .accounts
-            .current_owner
-            .to_account_info()
-            .key
-            .eq(&ctx.accounts.parent_token_account.owner)
-        {
-            // TODO: use account(constraints = to check)
-            return err!(ErrorCode::InvalidAuthority);
-        }
         let seeds = &[
             &CHILDREN_PDA_SEED[..],
             ctx.accounts
@@ -132,6 +122,7 @@ pub struct Extract<'info> {
         mut,
         constraint = children_meta.child == *child_token_account.to_account_info().key,
         constraint = children_meta.bump == _bump,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         close = current_owner
     )]
     children_meta: Box<Account<'info, ChildrenMetadata>>,
