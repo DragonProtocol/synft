@@ -142,6 +142,33 @@ describe("synft", () => {
    * check NFT owner now becomes user 1
   */
   it("Extract", async ()=> {
+    console.log("Extracting");
+    let connection = anchor.getProvider().connection;
+    const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        tokenAccount2.address.toBuffer()      
+      ],
+      program.programId
+    );
+    console.log("_metadata_pda is ", _metadata_pda.toString());
+    let extractTx = await program.rpc.extract(
+      _metadata_bump,
+      {
+        accounts: {
+          currentOwner: user2.publicKey,
+          childTokenAccount: tokenAccount1.address,
+          parentTokenAccount: tokenAccount2.address,
+          childrenMeta: _metadata_pda,
+     
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user2],
+      }
+    );
+    console.log('extractTx :', extractTx);
 
   });
 });
