@@ -6,7 +6,7 @@ import { TOKEN_PROGRAM_ID, createMint, mintTo, getAccount,Account, setAuthority,
    getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
 import { Synft } from "../target/types/synft";
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import { token } from "@project-serum/anchor/dist/cjs/utils";
 
 describe("synft", () => {
@@ -142,6 +142,7 @@ describe("synft", () => {
       program.programId
     );
     console.log("_metadata_pda is ", _metadata_pda.toString());
+    getAccount(connection, _metadata_pda); // account exists
     let extractTx = await program.rpc.extract(
       _metadata_bump,
       {
@@ -159,6 +160,10 @@ describe("synft", () => {
       }
     );
     console.log('extractTx :', extractTx);
-
+    try {
+      getAccount(connection, _metadata_pda);
+    } catch (error: any) {
+      assert.ok(error.message == "TokenAccountNotFoundError");
+    }
   });
 });
