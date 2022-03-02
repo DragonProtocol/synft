@@ -28,7 +28,7 @@ pub mod synft {
         if bump != pda_bump {
             return err!(ErrorCode::InvalidMetadataBump);
         }
-
+        // TODO: set authority here instead of in the frontend
         Ok(())
     }
 
@@ -38,6 +38,10 @@ pub mod synft {
     }
 
     pub fn extract(ctx: Context<Extract>, _bump: u8) -> Result<()> {
+        if !ctx.accounts.current_owner.to_account_info().key.eq(&ctx.accounts.parent_token_account.owner)  {
+            // TODO: use account(constraints = to check)
+            return err!(ErrorCode::InvalidAuthority);
+        }
         let seeds = &[
             &CHILDREN_PDA_SEED[..],
             ctx.accounts.parent_token_account.to_account_info().key.as_ref(),
@@ -97,8 +101,7 @@ pub struct Extract<'info> {
     #[account(
         mut,
         constraint = children_meta.child == *child_token_account.to_account_info().key,
-        // constraint = children_meta.bump == _bump,
-        // constraint = *parent_token_account.to_account_info().key == *current_owner.to_account_info().key,
+        constraint = children_meta.bump == _bump,
         close = current_owner
     )]
     children_meta: Box<Account<'info, ChildrenMetadata>>,
@@ -138,4 +141,6 @@ pub struct ParentMetadata {
 pub enum ErrorCode {
     #[msg("The bump passed in does not match the bump in the PDA")]
     InvalidMetadataBump,
+    #[msg("Current owner is not the authority of the parent token")]
+    InvalidAuthority
 }
