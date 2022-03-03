@@ -120,7 +120,7 @@ describe("synft", () => {
     );
     console.log('initTx :', initTx);
     let childrenMeta = await program.account.childrenMetadata.fetch(_metadata_pda);
-    assert.ok(childrenMeta.reversable == true);
+    assert.ok(childrenMeta.reversible == true);
     console.log("before setAuthority ", tokenAccount1.owner.toString());
     assert.ok(childrenMeta.bump == _metadata_bump);
     tokenAccount1 = await getAccount(connection, tokenAccount1.address);
