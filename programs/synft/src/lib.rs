@@ -64,26 +64,6 @@ pub mod synft {
             ctx.accounts.into_transfer_to_pda_context(),
             inject_fungible_token_amount,
         )?;
-
-        // // set spl token to 
-        // let (_, spl_pda_bump) =
-        // Pubkey::find_program_address(&[&SPL_TOKEN_PDA_SEED[..], parent_key], &(ctx.program_id));
-        // let seeds = &[
-        //     &SPL_TOKEN_PDA_SEED[..],
-        //     ctx.accounts
-        //         .parent_token_account
-        //         .to_account_info()
-        //         .key
-        //         .as_ref(),
-        //     &[spl_pda_bump],
-        // ];
-        // token::set_authority(
-        //     ctx.accounts
-        //         .into_set_spl_token_authority_context()
-        //         .with_signer(&[&seeds[..]]), 
-        //     AuthorityType::AccountOwner,
-        //     Some(*ctx.accounts.children_meta.to_account_info().key),
-        // )?;
         Ok(())
     }
 
@@ -154,7 +134,7 @@ impl<'info> InitializeInject<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(inject_token_amount: u64)]
+#[instruction(inject_fungible_token_amount: u64)]
 pub struct InitializeFungibleTokenInject<'info> {
     // Do this instruction when the parent do NOT has any metadata associated
     // with it. This is checked offchain before sending this tx.
@@ -162,8 +142,6 @@ pub struct InitializeFungibleTokenInject<'info> {
     pub current_owner: Signer<'info>,
     #[account(
         mut,
-        constraint = inject_token_amount > 1,
-        constraint = child_token_account.amount >= inject_token_amount
     )]
     pub child_token_account: Account<'info, TokenAccount>,
     pub parent_token_account: Account<'info, TokenAccount>,
