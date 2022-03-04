@@ -87,6 +87,59 @@ describe("synft", () => {
   });
 
   /**
+   * Test: transfer spl token from user 1 to NFT
+   * 
+  */
+  it("Inject fungible token", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        tokenAccount2.address.toBuffer()      
+      ],
+      program.programId
+    );
+    console.log("_metadata_pda is ", _metadata_pda.toString());
+    console.log("_metadata_bump is",_metadata_bump);
+
+    const inject_fungible_token_amount = 1;
+    const [_fungible_token_pda, _fungible_token_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("spl-token-seed")),
+        tokenAccount2.address.toBuffer()      
+      ],
+      program.programId
+    );
+    console.log("_fungible_token_pda is ", _fungible_token_pda.toString());
+    console.log("_fungible_token_bump is",_fungible_token_bump);
+
+    let initTx = await program.rpc.initializeFungibleTokenInject( 
+      true, _metadata_bump, inject_fungible_token_amount,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          childTokenAccount: tokenAccount1.address,
+          parentTokenAccount: tokenAccount2.address,
+          childrenMeta: _metadata_pda,
+          mint: mint1,
+          fungibleTokenAccount: _fungible_token_pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      }
+    );
+    console.log('initTx :', initTx);
+    console.log('_fungible_token_pda :', _fungible_token_pda);
+    let childrenMeta = await program.account.childrenMetadata.fetch(_metadata_pda);
+    assert.ok(childrenMeta.reversible == true);
+    assert.ok(childrenMeta.bump == _metadata_bump);
+    const splTokenAccount = await getAccount(connection, _fungible_token_pda);
+    assert.ok(splTokenAccount.owner.equals(_metadata_pda)); 
+  });
+
+  /**
    * Test: transfer NFT from user 1 to NFT 2
    * check NFT owner now becomes PDA
   */

@@ -32,22 +32,22 @@ pub mod synft {
         } 
 
         token::set_authority(
-            ctx.accounts.into_set_authority_context(), // use exended priviledge from current instruction for CPI
+            ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
             AuthorityType::AccountOwner,
             Some(*ctx.accounts.children_meta.to_account_info().key),
         )?;
         Ok(())
     }
 
-    pub fn initialize_spl_token_inject(
-        ctx: Context<InitializeSplTokenInject>,
+    pub fn initialize_fungible_token_inject(
+        ctx: Context<InitializeFungibleTokenInject>,
         reversible: bool,
-        inject_spl_token_amount: u64,
         bump: u8,
+        inject_fungible_token_amount: u64,
     ) -> Result<()> {
         ctx.accounts.children_meta.reversible = reversible;
         ctx.accounts.children_meta.bump = bump;
-        ctx.accounts.children_meta.child = *ctx.accounts.spl_token_account.to_account_info().key;
+        ctx.accounts.children_meta.child = *ctx.accounts.fungible_token_account.to_account_info().key;
         let parent_key = ctx
             .accounts
             .parent_token_account
@@ -62,27 +62,28 @@ pub mod synft {
 
         token::transfer(
             ctx.accounts.into_transfer_to_pda_context(),
-            inject_spl_token_amount,
+            inject_fungible_token_amount,
         )?;
 
-        let (_, spl_pda_bump) =
-        Pubkey::find_program_address(&[&SPL_TOKEN_PDA_SEED[..], parent_key], &(ctx.program_id));
-        let seeds = &[
-            &SPL_TOKEN_PDA_SEED[..],
-            ctx.accounts
-                .parent_token_account
-                .to_account_info()
-                .key
-                .as_ref(),
-            &[spl_pda_bump],
-        ];
-        token::set_authority(
-            ctx.accounts
-                .into_set_spl_token_authority_context()
-                .with_signer(&[&seeds[..]]), 
-            AuthorityType::AccountOwner,
-            Some(*ctx.accounts.children_meta.to_account_info().key),
-        )?;
+        // // set spl token to 
+        // let (_, spl_pda_bump) =
+        // Pubkey::find_program_address(&[&SPL_TOKEN_PDA_SEED[..], parent_key], &(ctx.program_id));
+        // let seeds = &[
+        //     &SPL_TOKEN_PDA_SEED[..],
+        //     ctx.accounts
+        //         .parent_token_account
+        //         .to_account_info()
+        //         .key
+        //         .as_ref(),
+        //     &[spl_pda_bump],
+        // ];
+        // token::set_authority(
+        //     ctx.accounts
+        //         .into_set_spl_token_authority_context()
+        //         .with_signer(&[&seeds[..]]), 
+        //     AuthorityType::AccountOwner,
+        //     Some(*ctx.accounts.children_meta.to_account_info().key),
+        // )?;
         Ok(())
     }
 
@@ -154,14 +155,14 @@ impl<'info> InitializeInject<'info> {
 
 #[derive(Accounts)]
 #[instruction(inject_token_amount: u64)]
-pub struct InitializeSplTokenInject<'info> {
+pub struct InitializeFungibleTokenInject<'info> {
     // Do this instruction when the parent do NOT has any metadata associated
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(
         mut,
-        constraint = inject_token_amount > 0,
+        constraint = inject_token_amount > 1,
         constraint = child_token_account.amount >= inject_token_amount
     )]
     pub child_token_account: Account<'info, TokenAccount>,
@@ -178,13 +179,12 @@ pub struct InitializeSplTokenInject<'info> {
     pub mint: Account<'info, Mint>,
     #[account(
         init,
-        seeds = [SPL_TOKEN_PDA_SEED, parent_token_account.key().as_ref()],
-        bump,
         payer = current_owner,
         token::mint = mint,
-        token::authority = current_owner,
+        seeds = [SPL_TOKEN_PDA_SEED, parent_token_account.key().as_ref()], bump,
+        token::authority = children_meta,
     )]
-    pub spl_token_account: Account<'info, TokenAccount>,
+    pub fungible_token_account: Account<'info, TokenAccount>,
 
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub system_program: AccountInfo<'info>,
@@ -193,20 +193,12 @@ pub struct InitializeSplTokenInject<'info> {
     pub token_program: AccountInfo<'info>,
 }
 
-impl<'info> InitializeSplTokenInject<'info> {
+impl<'info> InitializeFungibleTokenInject<'info> {
     fn into_transfer_to_pda_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         let cpi_accounts = Transfer {
             from: self.child_token_account.to_account_info().clone(),
-            to: self.spl_token_account.to_account_info().clone(),
+            to: self.fungible_token_account.to_account_info().clone(),
             authority: self.current_owner.to_account_info(),
-        };
-        CpiContext::new(self.token_program.clone(), cpi_accounts)
-    }
-
-    fn into_set_spl_token_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
-        let cpi_accounts = SetAuthority {
-            account_or_mint: self.spl_token_account.to_account_info(),
-            current_authority: self.current_owner.to_account_info(),
         };
         CpiContext::new(self.token_program.clone(), cpi_accounts)
     }
