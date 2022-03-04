@@ -4,7 +4,7 @@ use spl_token::instruction::AuthorityType;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 const CHILDREN_PDA_SEED: &[u8] = b"children-of";
-const SPL_TOKEN_PDA_SEED: &[u8] = b"spl-token-seed";
+const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
 
 #[program]
 pub mod synft {

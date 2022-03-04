@@ -105,7 +105,7 @@ describe("synft", () => {
     const inject_fungible_token_amount = 1;
     const [_fungible_token_pda, _fungible_token_bump] = await PublicKey.findProgramAddress(
       [
-        Buffer.from(anchor.utils.bytes.utf8.encode("spl-token-seed")),
+        Buffer.from(anchor.utils.bytes.utf8.encode("fungible-token-seed")),
         tokenAccount2.address.toBuffer()      
       ],
       program.programId
