@@ -123,6 +123,7 @@ describe("synft", () => {
           childrenMeta: _metadata_pda,
           mint: mint1,
           fungibleTokenAccount: _fungible_token_pda,
+          
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
