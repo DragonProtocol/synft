@@ -1,19 +1,21 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, SetAuthority, TokenAccount}; // Transfer,CloseAccount, Mint
+use anchor_spl::token::{self, Mint, SetAuthority, TokenAccount, Transfer}; // Transfer,CloseAccount, Mint
 use spl_token::instruction::AuthorityType;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 const CHILDREN_PDA_SEED: &[u8] = b"children-of";
+const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
+
 #[program]
 pub mod synft {
     use super::*;
 
     pub fn initialize_inject(
         ctx: Context<InitializeInject>,
-        reversable: bool,
+        reversible: bool,
         bump: u8,
     ) -> Result<()> {
-        ctx.accounts.children_meta.reversable = reversable;
+        ctx.accounts.children_meta.reversible = reversible;
         ctx.accounts.children_meta.bump = bump;
         ctx.accounts.children_meta.child = *ctx.accounts.child_token_account.to_account_info().key;
         let parent_key = ctx
@@ -23,16 +25,44 @@ pub mod synft {
             .key
             .as_ref();
         // TODO: support both SPL and NFT later
-        let (_, pda_bump) =
+        let (_, children_pda_bump) =
             Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
-        if bump != pda_bump {
+        if bump != children_pda_bump {
+            return err!(ErrorCode::InvalidMetadataBump);
+        } 
+
+        token::set_authority(
+            ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
+            AuthorityType::AccountOwner,
+            Some(*ctx.accounts.children_meta.to_account_info().key),
+        )?;
+        Ok(())
+    }
+
+    pub fn initialize_fungible_token_inject(
+        ctx: Context<InitializeFungibleTokenInject>,
+        reversible: bool,
+        bump: u8,
+        inject_fungible_token_amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.children_meta.reversible = reversible;
+        ctx.accounts.children_meta.bump = bump;
+        ctx.accounts.children_meta.child = *ctx.accounts.fungible_token_account.to_account_info().key;
+        let parent_key = ctx
+            .accounts
+            .parent_token_account
+            .to_account_info()
+            .key
+            .as_ref();
+        let (_, children_pda_bump) =
+            Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
+        if bump != children_pda_bump {
             return err!(ErrorCode::InvalidMetadataBump);
         }
 
-        token::set_authority(
-            ctx.accounts.into_set_authority_context(), // use exended priviledge from current instruction for CPI
-            AuthorityType::AccountOwner,
-            Some(*ctx.accounts.children_meta.to_account_info().key),
+        token::transfer(
+            ctx.accounts.into_transfer_to_pda_context(),
+            inject_fungible_token_amount,
         )?;
         Ok(())
     }
@@ -79,7 +109,7 @@ pub struct InitializeInject<'info> {
     #[account(
         init,
         payer = current_owner,
-        // space: 8 discriminator + 1 reversable + 1 index + 32 pubkey + 1 bump
+        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump
         space = 8+1+1+32+1,
         seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
     )]
@@ -99,6 +129,55 @@ impl<'info> InitializeInject<'info> {
             current_authority: self.current_owner.to_account_info(),
         };
 
+        CpiContext::new(self.token_program.clone(), cpi_accounts)
+    }
+}
+
+#[derive(Accounts)]
+#[instruction(inject_fungible_token_amount: u64)]
+pub struct InitializeFungibleTokenInject<'info> {
+    // Do this instruction when the parent do NOT has any metadata associated
+    // with it. This is checked offchain before sending this tx.
+    #[account(mut)]
+    pub current_owner: Signer<'info>,
+    #[account(
+        mut,
+    )]
+    pub child_token_account: Account<'info, TokenAccount>,
+    pub parent_token_account: Account<'info, TokenAccount>,
+    #[account(
+        init,
+        payer = current_owner,
+        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump
+        space = 8+1+1+32+1,
+        seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
+    )]
+    pub children_meta: Box<Account<'info, ChildrenMetadata>>,
+
+    pub mint: Account<'info, Mint>,
+    #[account(
+        init,
+        payer = current_owner,
+        token::mint = mint,
+        seeds = [SPL_TOKEN_PDA_SEED, parent_token_account.key().as_ref()], bump,
+        token::authority = children_meta,
+    )]
+    pub fungible_token_account: Account<'info, TokenAccount>,
+
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub system_program: AccountInfo<'info>,
+    pub rent: Sysvar<'info, Rent>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub token_program: AccountInfo<'info>,
+}
+
+impl<'info> InitializeFungibleTokenInject<'info> {
+    fn into_transfer_to_pda_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        let cpi_accounts = Transfer {
+            from: self.child_token_account.to_account_info().clone(),
+            to: self.fungible_token_account.to_account_info().clone(),
+            authority: self.current_owner.to_account_info(),
+        };
         CpiContext::new(self.token_program.clone(), cpi_accounts)
     }
 }
@@ -146,7 +225,7 @@ impl<'info> Extract<'info> {
 
 #[account]
 pub struct ChildrenMetadata {
-    pub reversable: bool,
+    pub reversible: bool,
     pub child: Pubkey, // children is found via filtering their authority (1 to many)
     // [ "childrenOf", pubkey, metaDataIndex ]
     bump: u8,
