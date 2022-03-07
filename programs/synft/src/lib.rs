@@ -67,7 +67,7 @@ pub mod synft {
         Ok(())
     }
 
-    pub fn inject(_ctx: Context<Inject>) -> Result<()> {
+    pub fn initialize_sol_inject(_ctx: Context<InitializeSolInject>) -> Result<()> {
         // TODO: adding more NFTs and SPLs to the children_metadata
         Ok(())
     }
@@ -143,7 +143,7 @@ pub struct InitializeFungibleTokenInject<'info> {
     #[account(
         mut,
     )]
-    pub child_token_account: Account<'info, TokenAccount>,
+    pub owner_token_account: Account<'info, TokenAccount>,
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         init,
@@ -174,7 +174,7 @@ pub struct InitializeFungibleTokenInject<'info> {
 impl<'info> InitializeFungibleTokenInject<'info> {
     fn into_transfer_to_pda_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         let cpi_accounts = Transfer {
-            from: self.child_token_account.to_account_info().clone(),
+            from: self.owner_token_account.to_account_info().clone(),
             to: self.fungible_token_account.to_account_info().clone(),
             authority: self.current_owner.to_account_info(),
         };
@@ -183,9 +183,28 @@ impl<'info> InitializeFungibleTokenInject<'info> {
 }
 
 #[derive(Accounts)]
-pub struct Inject {
-    // TODO: this is not necessary for now
-// will use this to Support both SPL and NFT later
+pub struct InitializeSolInject<'info> {
+    // Do this instruction when the parent do NOT has any metadata associated
+    // with it. This is checked offchain before sending this tx.
+    #[account(mut)]
+    pub current_owner: Signer<'info>,
+    #[account(mut)]
+    pub child_token_account: Account<'info, TokenAccount>,
+    pub parent_token_account: Account<'info, TokenAccount>,
+    #[account(
+        init,
+        payer = current_owner,
+        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump
+        space = 8+1+1+32+1,
+        seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
+    )]
+    pub children_meta: Box<Account<'info, ChildrenMetadata>>,
+
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub system_program: AccountInfo<'info>,
+    pub rent: Sysvar<'info, Rent>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub token_program: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]

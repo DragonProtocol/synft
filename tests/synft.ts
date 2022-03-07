@@ -125,7 +125,7 @@ describe("synft", () => {
       {
         accounts: {
           currentOwner: user1.publicKey,
-          childTokenAccount: tokenAccount1.address,
+          ownerTokenAccount: tokenAccount1.address,
           parentTokenAccount: tokenAccount2.address,
           childrenMeta: _metadata_pda,
           mint: mint1,
