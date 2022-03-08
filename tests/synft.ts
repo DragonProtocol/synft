@@ -296,11 +296,9 @@ describe("synft", () => {
     );
     console.log("_sol_pda is ", _sol_pda.toString());
     console.log("_sol_bump is", _sol_bump);
-    const solAccount = await anchor.getProvider().connection.getAccountInfo(_sol_pda);
-    console.log("solAccount.owner ", solAccount.owner.toBase58());
-    console.log(" program.programId ",  program.programId.toBase58())
-    console.log(" System ",  anchor.web3.SystemProgram.programId.toBase58())
-
+    const solAccount = await anchor.getProvider().connection.getAccountInfo(user2.publicKey);
+    console.log("solAccount.lamports ", solAccount.lamports);
+    
     getAccount(connection, _metadata_pda); // account exists
     let extractTx = await program.rpc.extractSol(
       _sol_bump,
@@ -319,6 +317,10 @@ describe("synft", () => {
       }
     );
     console.log('extractTx :', extractTx);
+    const solAccountUser2 = await anchor.getProvider().connection.getAccountInfo(user2.publicKey);
+    console.log("solAccountUser2.lamports ", solAccountUser2.lamports);
+    assert.ok(solAccountUser2.lamports > 1500000000)
+
     try {
       getAccount(connection, _metadata_pda);
     } catch (error: any) {

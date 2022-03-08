@@ -113,6 +113,9 @@ pub mod synft {
     }
 
     pub fn extract(ctx: Context<Extract>, _bump: u8) -> Result<()> {
+        if !ctx.accounts.children_meta.reversible {
+            return err!(ErrorCode::InvalidExtractAttempt);
+        }
         let seeds = &[
             &CHILDREN_PDA_SEED[..],
             ctx.accounts
@@ -137,6 +140,9 @@ pub mod synft {
     }
 
     pub fn extract_sol(ctx: Context<ExtractSol>, _bump: u8) -> Result<()> {
+        if !ctx.accounts.children_meta.reversible {
+            return err!(ErrorCode::InvalidExtractAttempt);
+        }
         let src: &mut AccountInfo = &mut ctx.accounts.child_sol_account.to_account_info();
         let dst: &mut AccountInfo = &mut ctx.accounts.current_owner.to_account_info();
         let amount = src.lamports();
@@ -344,4 +350,6 @@ pub enum ErrorCode {
     InvalidMetadataBump,
     #[msg("Current owner is not the authority of the parent token")]
     InvalidAuthority,
+    #[msg("Only Reversible Synthetic Tokens can be extracted")]
+    InvalidExtractAttempt,
 }
