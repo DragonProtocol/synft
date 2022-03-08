@@ -1,10 +1,13 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, SetAuthority, TokenAccount, Transfer}; // Transfer,CloseAccount, Mint
+use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount, Transfer}; // Transfer,CloseAccount, Mint
+use solana_program::program::invoke;
+use solana_program::system_instruction;
 use spl_token::instruction::AuthorityType;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 const CHILDREN_PDA_SEED: &[u8] = b"children-of";
 const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
+const SOL_PDA_SEED: &[u8] = b"sol-seed";
 
 #[program]
 pub mod synft {
@@ -18,18 +21,19 @@ pub mod synft {
         ctx.accounts.children_meta.reversible = reversible;
         ctx.accounts.children_meta.bump = bump;
         ctx.accounts.children_meta.child = *ctx.accounts.child_token_account.to_account_info().key;
+        ctx.accounts.children_meta.child_type = ChildType::NFT;
         let parent_key = ctx
             .accounts
             .parent_token_account
             .to_account_info()
             .key
             .as_ref();
-        // TODO: support both SPL and NFT later
+
         let (_, children_pda_bump) =
             Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
         if bump != children_pda_bump {
             return err!(ErrorCode::InvalidMetadataBump);
-        } 
+        }
 
         token::set_authority(
             ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
@@ -47,7 +51,10 @@ pub mod synft {
     ) -> Result<()> {
         ctx.accounts.children_meta.reversible = reversible;
         ctx.accounts.children_meta.bump = bump;
-        ctx.accounts.children_meta.child = *ctx.accounts.fungible_token_account.to_account_info().key;
+        ctx.accounts.children_meta.child =
+            *ctx.accounts.fungible_token_account.to_account_info().key;
+        ctx.accounts.children_meta.child_type = ChildType::SPL;
+
         let parent_key = ctx
             .accounts
             .parent_token_account
@@ -67,8 +74,41 @@ pub mod synft {
         Ok(())
     }
 
-    pub fn initialize_sol_inject(_ctx: Context<InitializeSolInject>) -> Result<()> {
-        // TODO: adding more NFTs and SPLs to the children_metadata
+    pub fn initialize_sol_inject(
+        ctx: Context<InitializeSolInject>,
+        reversible: bool,
+        bump: u8,
+        inject_sol_amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.children_meta.reversible = reversible;
+        ctx.accounts.children_meta.bump = bump;
+        ctx.accounts.children_meta.child = *ctx.accounts.sol_token_account.to_account_info().key;
+        ctx.accounts.children_meta.child_type = ChildType::SOL;
+
+        let parent_key = ctx
+            .accounts
+            .parent_token_account
+            .to_account_info()
+            .key
+            .as_ref();
+        let (_, children_pda_bump) =
+            Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
+        if bump != children_pda_bump {
+            return err!(ErrorCode::InvalidMetadataBump);
+        }
+
+        invoke(
+            &system_instruction::transfer(
+                ctx.accounts.current_owner.key,
+                ctx.accounts.sol_token_account.key,
+                inject_sol_amount, // 0.1 SOL
+            ),
+            &[
+                ctx.accounts.current_owner.to_account_info(),
+                ctx.accounts.sol_token_account.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
         Ok(())
     }
 
@@ -95,6 +135,23 @@ pub mod synft {
         // close meta_data account
         Ok(())
     }
+
+    pub fn extract_sol(ctx: Context<ExtractSol>, _bump: u8) -> Result<()> {
+        let src: &mut AccountInfo = &mut ctx.accounts.child_sol_account.to_account_info();
+        let dst: &mut AccountInfo = &mut ctx.accounts.current_owner.to_account_info();
+        let amount = src.lamports();
+        **src.try_borrow_mut_lamports()? = src
+            .lamports()
+            .checked_sub(amount)
+            .ok_or(ProgramError::InvalidArgument)?;
+        **dst.try_borrow_mut_lamports()? = dst
+            .lamports()
+            .checked_add(amount)
+            .ok_or(ProgramError::InvalidArgument)?;
+
+        // close meta_data account
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -109,17 +166,15 @@ pub struct InitializeInject<'info> {
     #[account(
         init,
         payer = current_owner,
-        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump
-        space = 8+1+1+32+1,
+        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump + 4 child type
+        space = 8+1+1+32+1+4,
         seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadata>>,
 
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub system_program: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 impl<'info> InitializeInject<'info> {
@@ -129,7 +184,7 @@ impl<'info> InitializeInject<'info> {
             current_authority: self.current_owner.to_account_info(),
         };
 
-        CpiContext::new(self.token_program.clone(), cpi_accounts)
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
     }
 }
 
@@ -140,16 +195,14 @@ pub struct InitializeFungibleTokenInject<'info> {
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
     pub current_owner: Signer<'info>,
-    #[account(
-        mut,
-    )]
+    #[account(mut)]
     pub owner_token_account: Account<'info, TokenAccount>,
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = current_owner,
-        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump
-        space = 8+1+1+32+1,
+        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump + 4 child type
+        space = 8+1+1+32+1+4,
         seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadata>>,
@@ -164,11 +217,9 @@ pub struct InitializeFungibleTokenInject<'info> {
     )]
     pub fungible_token_account: Account<'info, TokenAccount>,
 
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub system_program: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 impl<'info> InitializeFungibleTokenInject<'info> {
@@ -178,7 +229,7 @@ impl<'info> InitializeFungibleTokenInject<'info> {
             to: self.fungible_token_account.to_account_info().clone(),
             authority: self.current_owner.to_account_info(),
         };
-        CpiContext::new(self.token_program.clone(), cpi_accounts)
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
     }
 }
 
@@ -189,22 +240,26 @@ pub struct InitializeSolInject<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(mut)]
-    pub child_token_account: Account<'info, TokenAccount>,
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = current_owner,
-        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump
-        space = 8+1+1+32+1,
+        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump + 4 child type
+        space = 8+1+1+32+1+4,
         seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadata>>,
+    #[account(
+        init,
+        payer = current_owner, space = 8,
+        seeds = [SOL_PDA_SEED, parent_token_account.key().as_ref()], bump,
+    )]
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub sol_token_account: AccountInfo<'info>,
 
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub system_program: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -224,11 +279,9 @@ pub struct Extract<'info> {
     )]
     children_meta: Box<Account<'info, ChildrenMetadata>>,
 
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub system_program: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 impl<'info> Extract<'info> {
@@ -238,16 +291,46 @@ impl<'info> Extract<'info> {
             current_authority: self.children_meta.to_account_info().clone(), // PDA
         };
 
-        CpiContext::new(self.token_program.clone(), cpi_accounts)
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
     }
+}
+
+#[derive(Accounts)]
+pub struct ExtractSol<'info> {
+    #[account(mut)]
+    pub current_owner: Signer<'info>,
+    #[account(mut)]
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub child_sol_account: AccountInfo<'info>,
+    pub parent_token_account: Account<'info, TokenAccount>,
+    #[account(
+        mut,
+        constraint = children_meta.child == *child_sol_account.to_account_info().key,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        close = current_owner
+    )]
+    children_meta: Box<Account<'info, ChildrenMetadata>>,
+
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[account]
 pub struct ChildrenMetadata {
     pub reversible: bool,
-    pub child: Pubkey, // children is found via filtering their authority (1 to many)
+    pub child: Pubkey,
+    // children is found via filtering their authority (1 to many)
     // [ "childrenOf", pubkey, metaDataIndex ]
+    pub child_type: ChildType,
     bump: u8,
+}
+
+#[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
+pub enum ChildType {
+    SOL,
+    SPL,
+    NFT,
 }
 
 #[account]

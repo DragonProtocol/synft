@@ -89,10 +89,11 @@ describe("synft", () => {
     console.log('mint tx 2 :', signature2);
   });
 
+  
   /**
   * Test: transfer fungible token from user1 to NFT
   * 
- */
+  */
   it("Inject fungible token", async () => {
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
@@ -207,10 +208,10 @@ describe("synft", () => {
   });
 
   /**
-   * Test: transfer NFT from user 1 to NFT 2
-   * check NFT owner now becomes PDA
-  */
-  it("Inject", async () => {
+   * Test: transfer SOL from user 1 to NFT 2
+   * check the balance of user 1
+   */
+   it("Inject SOL", async () => {
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -220,16 +221,31 @@ describe("synft", () => {
       program.programId
     );
     console.log("_metadata_pda is ", _metadata_pda.toString());
-    console.log(_metadata_bump);
-    console.log("DONE")
-    let initTx = await program.rpc.initializeInject(
-      true, _metadata_bump,
+    console.log("_metadata_bump is", _metadata_bump);
+
+    const inject_sol_amount = 500000000;
+    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
+        tokenAccount2.address.toBuffer()
+      ],
+      program.programId
+    );
+    console.log("_sol_pda is ", _sol_pda.toString());
+    console.log("_sol_bump is", _sol_bump);
+
+    let user1Account = await anchor.getProvider().connection.getAccountInfo(user1.publicKey);
+    console.log('tokenAccount1 lamports is', user1Account.lamports);
+    const tokenAccount1Amount = user1Account.lamports;
+
+    let initTx = await program.rpc.initializeSolInject(
+      true, _metadata_bump, new anchor.BN(inject_sol_amount),
       {
         accounts: {
           currentOwner: user1.publicKey,
-          childTokenAccount: tokenAccount1.address,
           parentTokenAccount: tokenAccount2.address,
           childrenMeta: _metadata_pda,
+          solTokenAccount: _sol_pda,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -239,19 +255,27 @@ describe("synft", () => {
       }
     );
     console.log('initTx :', initTx);
+    console.log('_sol_pda :', _sol_pda);
+
+    // volidate the balance of tokenAccount 1
+    user1Account = await anchor.getProvider().connection.getAccountInfo(user1.publicKey);
+    console.log('tokenAccount1 lamports is', user1Account.lamports);
+
+    assert.ok(user1Account.lamports, Number(tokenAccount1Amount) - inject_sol_amount);
+
+    // volidate metadata
     let childrenMeta = await program.account.childrenMetadata.fetch(_metadata_pda);
     assert.ok(childrenMeta.reversible == true);
-    console.log("before setAuthority ", tokenAccount1.owner.toString());
     assert.ok(childrenMeta.bump == _metadata_bump);
-    tokenAccount1 = await getAccount(connection, tokenAccount1.address);
-    assert.ok(tokenAccount1.owner.equals(_metadata_pda));
-  });
+    assert.ok(childrenMeta.child.toString() == _sol_pda.toString());
 
-  /**
-   * Test: transfer NFT from NFT 2 back to user 1
-   * check NFT owner now becomes user 1
-  */
-  it("Extract", async () => {
+    // volidate the balance of sol account 
+    const solAccount = await anchor.getProvider().connection.getAccountInfo(_sol_pda);
+    assert.ok(solAccount.lamports, inject_sol_amount);
+
+});
+
+  it("Extract SOL to user 2", async () => {
     console.log("Extracting");
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
@@ -263,13 +287,27 @@ describe("synft", () => {
     );
     console.log("_metadata_pda is ", _metadata_pda.toString());
 
+    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
+        tokenAccount2.address.toBuffer()
+      ],
+      program.programId
+    );
+    console.log("_sol_pda is ", _sol_pda.toString());
+    console.log("_sol_bump is", _sol_bump);
+    const solAccount = await anchor.getProvider().connection.getAccountInfo(_sol_pda);
+    console.log("solAccount.owner ", solAccount.owner.toBase58());
+    console.log(" program.programId ",  program.programId.toBase58())
+    console.log(" System ",  anchor.web3.SystemProgram.programId.toBase58())
+
     getAccount(connection, _metadata_pda); // account exists
-    let extractTx = await program.rpc.extract(
-      _metadata_bump,
+    let extractTx = await program.rpc.extractSol(
+      _sol_bump,
       {
         accounts: {
           currentOwner: user2.publicKey,
-          childTokenAccount: tokenAccount1.address,
+          childSolAccount: _sol_pda,
           parentTokenAccount: tokenAccount2.address,
           childrenMeta: _metadata_pda,
 
@@ -287,4 +325,86 @@ describe("synft", () => {
       assert.ok(error.message == "TokenAccountNotFoundError");
     }
   });
+
+   /**
+   * Test: transfer NFT from user 1 to NFT 2
+   * check NFT owner now becomes PDA
+  */
+    it("Inject NFT", async () => {
+      let connection = anchor.getProvider().connection;
+      const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+          tokenAccount2.address.toBuffer()
+        ],
+        program.programId
+      );
+      console.log("_metadata_pda is ", _metadata_pda.toString());
+      console.log(_metadata_bump);
+      console.log("DONE")
+      let initTx = await program.rpc.initializeInject(
+        true, _metadata_bump,
+        {
+          accounts: {
+            currentOwner: user1.publicKey,
+            childTokenAccount: tokenAccount1.address,
+            parentTokenAccount: tokenAccount2.address,
+            childrenMeta: _metadata_pda,
+  
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          },
+          signers: [user1],
+        }
+      );
+      console.log('initTx :', initTx);
+      let childrenMeta = await program.account.childrenMetadata.fetch(_metadata_pda);
+      assert.ok(childrenMeta.reversible == true);
+      console.log("before setAuthority ", tokenAccount1.owner.toString());
+      assert.ok(childrenMeta.bump == _metadata_bump);
+      tokenAccount1 = await getAccount(connection, tokenAccount1.address);
+      assert.ok(tokenAccount1.owner.equals(_metadata_pda));
+    });
+  
+    /**
+     * Test: transfer NFT from NFT 2 back to user 1
+     * check NFT owner now becomes user 1
+    */
+    it("Extract NFT", async () => {
+      console.log("Extracting");
+      let connection = anchor.getProvider().connection;
+      const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+          tokenAccount2.address.toBuffer()
+        ],
+        program.programId
+      );
+      console.log("_metadata_pda is ", _metadata_pda.toString());
+  
+      getAccount(connection, _metadata_pda); // account exists
+      let extractTx = await program.rpc.extract(
+        _metadata_bump,
+        {
+          accounts: {
+            currentOwner: user2.publicKey,
+            childTokenAccount: tokenAccount1.address,
+            parentTokenAccount: tokenAccount2.address,
+            childrenMeta: _metadata_pda,
+  
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          },
+          signers: [user2],
+        }
+      );
+      console.log('extractTx :', extractTx);
+      try {
+        getAccount(connection, _metadata_pda);
+      } catch (error: any) {
+        assert.ok(error.message == "TokenAccountNotFoundError");
+      }
+    });
 });
