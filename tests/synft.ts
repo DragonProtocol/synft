@@ -374,7 +374,6 @@ describe("synft", () => {
 
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        tokenProgram: TOKEN_PROGRAM_ID,
       },
       signers: [user2],
     });

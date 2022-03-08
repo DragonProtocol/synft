@@ -295,7 +295,6 @@ pub struct ExtractSol<'info> {
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
-    pub token_program: Program<'info, Token>,
 }
 
 #[account]
