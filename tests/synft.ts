@@ -42,8 +42,12 @@ describe("synft", () => {
   const payer = anchor.web3.Keypair.generate();
   let mint1 = null;
   let mint2 = null;
+  let mint3 = null;
+  let mint4 = null;
   let tokenAccount1 = null as Account;
   let tokenAccount2 = null as Account;
+  let tokenAccount3 = null as Account;
+  let tokenAccount4 = null as Account;
 
   it("Is initialized!", async () => {
     let connection = anchor.getProvider().connection;
@@ -99,6 +103,20 @@ describe("synft", () => {
       mintAuthority.publicKey,
       0
     );
+    mint3 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint4 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
     tokenAccount1 = await getOrCreateAssociatedTokenAccount(
       connection,
       payer,
@@ -113,8 +131,24 @@ describe("synft", () => {
       user2.publicKey,
       true
     );
+    tokenAccount3 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint3,
+      user1.publicKey,
+      true
+    );
+    tokenAccount4 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint4,
+      user2.publicKey,
+      true
+    );
     assert.ok(tokenAccount1.owner.toString() == user1.publicKey.toString());
     assert.ok(tokenAccount2.owner.toString() == user2.publicKey.toString());
+    assert.ok(tokenAccount3.owner.toString() == user1.publicKey.toString());
+    assert.ok(tokenAccount4.owner.toString() == user2.publicKey.toString());
     let signature1 = await mintTo(
       connection,
       payer,
@@ -135,6 +169,27 @@ describe("synft", () => {
       []
     );
     console.log("mint tx 2 :", signature2);
+    let signature3 = await mintTo(
+      connection,
+      payer,
+      mint3,
+      tokenAccount3.address,
+      mintAuthority,
+      10,
+      []
+    );
+    console.log("mint tx 3 :", signature3);
+    let signature4 = await mintTo(
+      connection,
+      payer,
+      mint4,
+      tokenAccount4.address,
+      mintAuthority,
+      10,
+      []
+    );
+
+    console.log("mint tx 4 :", signature4);
   });
 
   /**
@@ -464,22 +519,10 @@ describe("synft", () => {
 
     let metaDataAfter = await program.account.childrenMetadata.fetchNullable(_metadata_pda);
     assert.ok(metaDataAfter === null);
-
-    
-    let tokenAccount2After = await getAccount(connection, tokenAccount2.address);
-    console.log("tokenAccount2After.amount.toString() ", tokenAccount2After.amount.toString())
-    assert.ok(tokenAccount2After.amount.toString() == "0");
   });
 
-
-
-
-
-  /**
-   * Test: transfer NFT from user 1 to NFT 2
-   * check NFT owner now becomes PDA
-   */
-  it("Inject NFT", async () => {
+  it("Burn Parent Token and withdraw SPL to user 2", async () => {
+    
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -491,7 +534,7 @@ describe("synft", () => {
     console.log("_metadata_pda is ", _metadata_pda.toString());
     console.log(_metadata_bump);
     console.log("DONE");
-    let initTx = await program.rpc.initializeInject(true, _metadata_bump, {
+    let initTx = await program.rpc.initializeInject(false, _metadata_bump, {
       accounts: {
         currentOwner: user1.publicKey,
         childTokenAccount: tokenAccount1.address,
@@ -508,11 +551,74 @@ describe("synft", () => {
     let childrenMeta = await program.account.childrenMetadata.fetch(
       _metadata_pda
     );
+    assert.ok(childrenMeta.reversible == false);
+
+
+    getAccount(connection, _metadata_pda); // account exists
+    let extractTx = await program.rpc.burnForToken({
+      accounts: {
+        currentOwner: user2.publicKey,
+        parentTokenMint: tokenAccount2.mint,
+        parentTokenAccount: tokenAccount2.address,
+        childTokenAccount: tokenAccount1.address,
+        childrenMeta: _metadata_pda,
+
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [user2],
+    });
+
+    let metaDataAfter = await program.account.childrenMetadata.fetchNullable(_metadata_pda);
+    assert.ok(metaDataAfter === null);
+    
+    let tokenAccount1After = await getAccount(connection, tokenAccount1.address);
+    assert.ok(tokenAccount1After.owner.toBase58() === user2.publicKey.toBase58());
+       
+    let tokenAccount2After = await getAccount(connection, tokenAccount2.address);
+    assert.ok(tokenAccount2After.amount.toString() == "0");
+  });
+
+  /**
+   * Test: transfer NFT from user 1 to NFT 2
+   * check NFT owner now becomes PDA
+   */
+  it("Inject NFT", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_metadata_pda4, _metadata_bump4] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        tokenAccount4.address.toBuffer(),
+      ],
+      program.programId
+    );
+    console.log("_metadata_pda is ", _metadata_pda4.toString());
+    console.log(_metadata_bump4);
+    console.log("DONE");
+    assert.ok(tokenAccount3.owner.toBase58() === user1.publicKey.toBase58());
+    let initTx = await program.rpc.initializeInject(true, _metadata_bump4, {
+      accounts: {
+        currentOwner: user1.publicKey,
+        childTokenAccount: tokenAccount3.address,
+        parentTokenAccount: tokenAccount4.address,
+        childrenMeta: _metadata_pda4,
+
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [user1],
+    });
+    console.log("initTx :", initTx);
+    let childrenMeta = await program.account.childrenMetadata.fetch(
+      _metadata_pda4
+    );
     assert.ok(childrenMeta.reversible == true);
-    console.log("before setAuthority ", tokenAccount1.owner.toString());
-    assert.ok(childrenMeta.bump == _metadata_bump);
-    tokenAccount1 = await getAccount(connection, tokenAccount1.address);
-    assert.ok(tokenAccount1.owner.equals(_metadata_pda));
+    console.log("before setAuthority ", tokenAccount3.owner.toString());
+    assert.ok(childrenMeta.bump == _metadata_bump4);
+    tokenAccount3 = await getAccount(connection, tokenAccount3.address);
+    assert.ok(tokenAccount3.owner.equals(_metadata_pda4));
   });
 
   /**
@@ -525,7 +631,7 @@ describe("synft", () => {
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount2.address.toBuffer(),
+        tokenAccount4.address.toBuffer(),
       ],
       program.programId
     );
@@ -535,8 +641,8 @@ describe("synft", () => {
     let extractTx = await program.rpc.extract(_metadata_bump, {
       accounts: {
         currentOwner: user2.publicKey,
-        childTokenAccount: tokenAccount1.address,
-        parentTokenAccount: tokenAccount2.address,
+        childTokenAccount: tokenAccount3.address,
+        parentTokenAccount: tokenAccount4.address,
         childrenMeta: _metadata_pda,
 
         systemProgram: anchor.web3.SystemProgram.programId,
