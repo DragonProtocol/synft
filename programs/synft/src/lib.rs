@@ -3,10 +3,17 @@ use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount, Transfer}
 use solana_program::program::invoke;
 use solana_program::system_instruction;
 use spl_token::instruction::AuthorityType;
+use mpl_token_metadata::{
+    // state::{Uses, Creator, Collection},
+    instruction::{
+      create_metadata_accounts_v2,
+    },
+};
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 const CHILDREN_PDA_SEED: &[u8] = b"children-of";
 const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
+const SYNTHETIC_NFT_SEED: &[u8] = b"synthetic-nft-seed";
 
 #[program]
 pub mod synft {
@@ -145,6 +152,99 @@ pub mod synft {
         // close meta_data account
         Ok(())
     }
+
+    pub fn nft_copy(
+        ctx: Context<NftCopy>,
+        name: String,
+        symbol: String,
+        uri: String,
+        bump: u8,
+    ) -> Result<()> {
+        ctx.accounts.synthetic_nft_data.bump = bump;
+
+        // create mint account
+        let mint_key = Pubkey::new_unique();
+        invoke(
+            &spl_token::instruction::initialize_mint(
+                &spl_token::id(),
+                &mint_key,
+                &ctx.accounts.current_owner.key,
+                None,
+                0,
+            )?,
+            &[
+                ctx.accounts.current_owner.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
+
+        // create spl token account
+        let token_account_key = Pubkey::new_unique();
+        invoke(
+            &spl_token::instruction::initialize_account(
+                &spl_token::id(),
+                &token_account_key,
+                &mint_key, 
+                ctx.accounts.current_owner.key,
+            )?,
+            &[
+                ctx.accounts.current_owner.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
+
+        // create nft metadata
+        let meta_data_account_key = Pubkey::new_unique();
+        invoke(
+            &create_metadata_accounts_v2(
+                mpl_token_metadata::ID,
+                meta_data_account_key,
+                mint_key,
+                ctx.accounts.current_owner.to_account_info().key(),
+                ctx.accounts.current_owner.to_account_info().key(),
+                ctx.accounts.current_owner.to_account_info().key(),
+                name,
+                symbol,
+                uri,
+                None,
+                0,
+                true,
+                true,
+                None,
+                None,
+            ),
+            &[
+                ctx.accounts.current_owner.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
+
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct NftCopy<'info> {
+    // Do this instruction when the parent do NOT has any metadata associated
+    // with it. This is checked offchain before sending this tx.
+    #[account(mut)]
+    pub current_owner: Signer<'info>,
+    pub from_nft_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        init,
+        payer = current_owner,
+        // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump + 4 child type
+        space = 8+1,
+        seeds = [SYNTHETIC_NFT_SEED, from_nft_token_account.key().as_ref()], bump
+    )]
+    pub synthetic_nft_data: Box<Account<'info, SyntheticNftData>>,
+
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub system_program: AccountInfo<'info>,
+    pub rent: Sysvar<'info, Rent>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub token_program: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
@@ -305,6 +405,11 @@ pub struct ChildrenMetadata {
     // children is found via filtering their authority (1 to many)
     // [ "childrenOf", pubkey, metaDataIndex ]
     pub child_type: ChildType,
+    bump: u8,
+}
+
+#[account]
+pub struct SyntheticNftData {
     bump: u8,
 }
 
