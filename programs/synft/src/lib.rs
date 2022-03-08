@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount, Transfer}; // Transfer,CloseAccount, Mint
+use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount, Transfer, Burn}; // Transfer,CloseAccount, Mint
 use solana_program::program::invoke;
 use solana_program::system_instruction;
 use spl_token::instruction::AuthorityType;
@@ -7,6 +7,7 @@ use spl_token::instruction::AuthorityType;
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 const CHILDREN_PDA_SEED: &[u8] = b"children-of";
 const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
+//const BURN_ADDRESS: Pubkey = Pubkey::new(b"1nc1nerator11111111111111111111111111111111") ;
 
 #[program]
 pub mod synft {
@@ -143,6 +144,11 @@ pub mod synft {
         }
 
         // close meta_data account
+        Ok(())
+    }
+
+    pub fn burn_for_sol(ctx: Context<BurnForSol>) -> Result<()> {
+        token::burn(ctx.accounts.into_burn_context(), ctx.accounts.parent_token_account.amount)?;
         Ok(())
     }
 }
@@ -295,7 +301,38 @@ pub struct ExtractSol<'info> {
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct BurnForSol<'info> {
+    #[account(mut)]
+    pub current_owner: Signer<'info>,
+    #[account(mut)]
+    pub parent_token_mint: Account<'info, Mint>,
+    #[account(mut)]
+    pub parent_token_account: Account<'info, TokenAccount>,
+    #[account(
+        mut,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        close = current_owner
+    )]
+    children_meta: Box<Account<'info, ChildrenMetadata>>,
+
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
+}
+
+impl<'info> BurnForSol<'info> {
+    fn into_burn_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
+        let cpi_accounts = Burn {
+            mint: self.parent_token_mint.to_account_info().clone(),
+            to: self.parent_token_account.to_account_info().clone(),
+            authority: self.current_owner.to_account_info().clone(),
+        };
+
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
+    }
 }
 
 #[account]

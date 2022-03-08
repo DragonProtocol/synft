@@ -60,7 +60,7 @@ describe("synft", () => {
       .connection.confirmTransaction(
         await anchor
           .getProvider()
-          .connection.requestAirdrop(user1.publicKey, 1000000000),
+          .connection.requestAirdrop(user1.publicKey, 5000000000),
         "processed"
       );
     await anchor
@@ -374,7 +374,6 @@ describe("synft", () => {
 
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        tokenProgram: TOKEN_PROGRAM_ID,
       },
       signers: [user2],
     });
@@ -385,12 +384,96 @@ describe("synft", () => {
     console.log("solAccountUser2.lamports ", solAccountUser2.lamports);
     assert.ok(solAccountUser2.lamports > 1500000000);
 
-    try {
-      getAccount(connection, _metadata_pda);
-    } catch (error: any) {
-      assert.ok(error.message == "TokenAccountNotFoundError");
-    }
+
+    let metaDataAfter = await program.account.childrenMetadata.fetchNullable(_metadata_pda);
+    assert.ok(metaDataAfter === null);
   });
+
+  it("Burn Parent Token and withdraw SOL to user 2", async () => {
+    
+    let connection = anchor.getProvider().connection;
+    const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        tokenAccount2.address.toBuffer(),
+      ],
+      program.programId
+    );
+    console.log("_metadata_pda is ", _metadata_pda.toString());
+    console.log("_metadata_bump is", _metadata_bump);
+
+    const inject_sol_amount = 500000000;
+    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
+        tokenAccount2.address.toBuffer(),
+      ],
+      program.programId
+    );
+    console.log("_sol_pda is ", _sol_pda.toString());
+    console.log("_sol_bump is", _sol_bump);
+
+    let user1Account = await anchor
+      .getProvider()
+      .connection.getAccountInfo(user1.publicKey);
+    console.log("tokenAccount1 lamports is", user1Account.lamports);
+    const tokenAccount1Amount = user1Account.lamports;
+
+    let initTx = await program.rpc.initializeSolInject(
+      true,
+      _metadata_bump,
+      new anchor.BN(inject_sol_amount),
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          parentTokenAccount: tokenAccount2.address,
+          childrenMeta: _metadata_pda,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [user1],
+      }
+    );
+
+    const metaSolAccount = await anchor
+      .getProvider()
+      .connection.getAccountInfo(_metadata_pda);
+    assert.ok(metaSolAccount.lamports >= inject_sol_amount);
+
+    getAccount(connection, _metadata_pda); // account exists
+    let extractTx = await program.rpc.burnForSol({
+      accounts: {
+        currentOwner: user2.publicKey,
+        parentTokenMint: tokenAccount2.mint,
+        parentTokenAccount: tokenAccount2.address,
+        childrenMeta: _metadata_pda,
+
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [user2],
+    });
+    const solAccountUser2 = await anchor
+      .getProvider()
+      .connection.getAccountInfo(user2.publicKey);
+    console.log("solAccountUser2.lamports ", solAccountUser2.lamports);
+    assert.ok(solAccountUser2.lamports > 2000000000);
+
+
+    let metaDataAfter = await program.account.childrenMetadata.fetchNullable(_metadata_pda);
+    assert.ok(metaDataAfter === null);
+
+    
+    let tokenAccount2After = await getAccount(connection, tokenAccount2.address);
+    console.log("tokenAccount2After.amount.toString() ", tokenAccount2After.amount.toString())
+    assert.ok(tokenAccount2After.amount.toString() == "0");
+  });
+
+
+
+
 
   /**
    * Test: transfer NFT from user 1 to NFT 2
