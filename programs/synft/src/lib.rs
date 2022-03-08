@@ -7,7 +7,6 @@ use spl_token::instruction::AuthorityType;
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 const CHILDREN_PDA_SEED: &[u8] = b"children-of";
 const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
-const SOL_PDA_SEED: &[u8] = b"sol-seed";
 
 #[program]
 pub mod synft {
@@ -82,7 +81,6 @@ pub mod synft {
     ) -> Result<()> {
         ctx.accounts.children_meta.reversible = reversible;
         ctx.accounts.children_meta.bump = bump;
-        ctx.accounts.children_meta.child = *ctx.accounts.sol_token_account.to_account_info().key;
         ctx.accounts.children_meta.child_type = ChildType::SOL;
 
         let parent_key = ctx
@@ -100,12 +98,12 @@ pub mod synft {
         invoke(
             &system_instruction::transfer(
                 ctx.accounts.current_owner.key,
-                ctx.accounts.sol_token_account.key,
+                ctx.accounts.children_meta.to_account_info().key,
                 inject_sol_amount, // 0.1 SOL
             ),
             &[
                 ctx.accounts.current_owner.to_account_info(),
-                ctx.accounts.sol_token_account.to_account_info(),
+                ctx.accounts.children_meta.to_account_info(),
                 ctx.accounts.system_program.to_account_info(),
             ],
         )?;
@@ -143,17 +141,6 @@ pub mod synft {
         if !ctx.accounts.children_meta.reversible {
             return err!(ErrorCode::InvalidExtractAttempt);
         }
-        let src: &mut AccountInfo = &mut ctx.accounts.child_sol_account.to_account_info();
-        let dst: &mut AccountInfo = &mut ctx.accounts.current_owner.to_account_info();
-        let amount = src.lamports();
-        **src.try_borrow_mut_lamports()? = src
-            .lamports()
-            .checked_sub(amount)
-            .ok_or(ProgramError::InvalidArgument)?;
-        **dst.try_borrow_mut_lamports()? = dst
-            .lamports()
-            .checked_add(amount)
-            .ok_or(ProgramError::InvalidArgument)?;
 
         // close meta_data account
         Ok(())
@@ -255,17 +242,9 @@ pub struct InitializeSolInject<'info> {
         seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadata>>,
-    #[account(
-        init,
-        payer = current_owner, space = 8,
-        seeds = [SOL_PDA_SEED, parent_token_account.key().as_ref()], bump,
-    )]
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub sol_token_account: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
-    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
 }
 
 #[derive(Accounts)]
@@ -306,12 +285,9 @@ pub struct ExtractSol<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(mut)]
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub child_sol_account: AccountInfo<'info>,
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
-        constraint = children_meta.child == *child_sol_account.to_account_info().key,
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         close = current_owner
     )]
