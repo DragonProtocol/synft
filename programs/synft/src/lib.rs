@@ -7,7 +7,6 @@ use spl_token::instruction::AuthorityType;
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 const CHILDREN_PDA_SEED: &[u8] = b"children-of";
 const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
-//const BURN_ADDRESS: Pubkey = Pubkey::new(b"1nc1nerator11111111111111111111111111111111") ;
 
 #[program]
 pub mod synft {
