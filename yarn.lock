@@ -42,6 +42,10 @@
   dependencies:
     "@hapi/hoek" "^9.0.0"
 
+"@metaplex-foundation/metaplex-program-library@metaplex-foundation/metaplex-program-library":
+  version "0.0.0"
+  resolved "https://codeload.github.com/metaplex-foundation/metaplex-program-library/tar.gz/e0ef059217d7693f9b4ca262265f01a6c652998c"
+
 "@project-serum/anchor@^0.22.0":
   version "0.22.1"
   resolved "https://registry.yarnpkg.com/@project-serum/anchor/-/anchor-0.22.1.tgz#698a9620f94691de0a12bbc650a5c8380e2f0e8a"
