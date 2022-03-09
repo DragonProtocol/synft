@@ -175,7 +175,7 @@ pub mod synft {
             None,
         )?;
         msg!("create mint account");
-        
+
         // // create spl token account
         token::initialize_account(ctx.accounts.initialize_account_context())?;
         msg!("create spl token account");
@@ -197,13 +197,6 @@ pub mod synft {
                 None,
                 None,
             ),
-            // accounts.metadata_account,
-            // accounts.mint.to_account_info(),
-            // accounts.mint_authority,
-            // accounts.payer,
-            // accounts.update_authority,
-            // accounts.system_program,
-            // accounts.rent,
             &[
                 ctx.accounts.nft_meta_data_account.clone(),
                 ctx.accounts.nft_mint_account.to_account_info(),
@@ -233,20 +226,13 @@ pub struct NftCopy<'info> {
     #[account(
         init,
         payer = current_owner,
-        space = Mint::LEN, 
+        space = Mint::LEN,
         owner = token_program.key(),
         seeds = [SYNTHETIC_NFT_MINT_SEED, from_nft_mint.key().as_ref()], bump,
     )]
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub nft_mint_account: AccountInfo<'info>,
-    // #[account(
-    //     init,
-    //     payer = current_owner,
-    //     token::mint = mint,
-    //     seeds = [SPL_TOKEN_PDA_SEED, parent_token_account.key().as_ref()], bump,
-    //     token::authority = children_meta,
-    // )]
-    // pub fungible_token_account: Account<'info, TokenAccount>,
+
     #[account(
         init,
         payer = current_owner,
@@ -260,7 +246,7 @@ pub struct NftCopy<'info> {
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
-    pub mpl_program: Program<'info, TokenMetadata>
+    pub mpl_program: Program<'info, TokenMetadata>,
 }
 impl<'info> NftCopy<'info> {
     fn initialize_mint_context(&self) -> CpiContext<'_, '_, '_, 'info, InitializeMint<'info>> {
