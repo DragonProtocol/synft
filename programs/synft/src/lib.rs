@@ -444,11 +444,6 @@ pub struct ChildrenMetadata {
     bump: u8,
 }
 
-#[account]
-pub struct SyntheticNftData {
-    bump: u8,
-}
-
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
 pub enum ChildType {
     SOL,

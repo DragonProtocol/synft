@@ -23,44 +23,45 @@ import { Synft } from "../target/types/synft";
 import { assert, expect } from "chai";
 import { token } from "@project-serum/anchor/dist/cjs/utils";
 
-//import axios from 'axios';
-//import { programs } from '@metaplex/js';
+import axios from 'axios';
+import { programs } from '@metaplex/js';
 
-// const {
-//   metadata: { Metadata },
-// } = programs;
+const {
+  metadata: { Metadata },
+} = programs;
 
 
 var MPL_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 
-// export interface INFT {
-//   pubkey?: PublicKey;
-//   mint: PublicKey;
-//   onchainMetadata: unknown;
-//   externalMetadata: unknown;
-// }
+export interface INFT {
+  pubkey?: PublicKey;
+  mint: PublicKey;
+  onchainMetadata: unknown;
+  externalMetadata: unknown;
+}
 
 
-// async function getNFTMetadata(
-//   mint: string,
-//   conn: Connection,
-//   pubkey?: string
-// ): Promise<INFT | undefined> {
-//   // console.log('Pulling metadata for:', mint);
-//   try {
-//     const metadataPDA = await Metadata.getPDA(mint);
-//     const onchainMetadata = (await Metadata.load(conn, metadataPDA)).data;
-//     const externalMetadata = (await axios.get(onchainMetadata.data.uri)).data;
-//     return {
-//       pubkey: pubkey ? new PublicKey(pubkey) : undefined,
-//       mint: new PublicKey(mint),
-//       onchainMetadata,
-//       externalMetadata,
-//     };
-//   } catch (e) {
-//     console.log(`failed to pull metadata for token ${mint}`);
-//   }
-// }
+async function getNFTMetadata(
+  mint: string,
+  conn: Connection,
+  pubkey?: string
+): Promise<INFT | undefined> {
+  // console.log('Pulling metadata for:', mint);
+  try {
+    const metadataPDA = await Metadata.getPDA(mint);
+    const onchainMetadata = (await Metadata.load(conn, metadataPDA)).data;
+    console.log("onchainMetadata.data.uri:", onchainMetadata.data.uri);
+    const externalMetadata = (await axios.get(onchainMetadata.data.uri)).data;
+    return {
+      pubkey: pubkey ? new PublicKey(pubkey) : undefined,
+      mint: new PublicKey(mint),
+      onchainMetadata,
+      externalMetadata,
+    };
+  } catch (e) {
+    console.log(`failed to pull metadata for token ${mint}`);
+  }
+}
 
 describe("synft", () => {
   // Configure the client to use the local cluster.
@@ -599,15 +600,20 @@ describe("synft", () => {
     });
     console.log("nftCopyTx: ", nftCopyTx);
 
-    // // volidate metadata account 
-    // let metaAccount = await getAccount(connection, _nft_metadata_pda);
-    // assert.ok(metaAccount.mint == _nft_mint_pda);
-    // console.log("metaAccount: ", metaAccount);
+    // // volidate _nft_token_account_pda
+    let nftTokenAccount = await getAccount(connection, _nft_token_account_pda);
+    assert.ok(nftTokenAccount.mint.toString() == _nft_mint_pda.toString());
 
     // // volidate if mint account exists
     // let mintAccount = await getAccount(connection, _nft_mint_pda);
     // assert.ok(mintAccount.address == _nft_mint_pda);
     // console.log("mintAccount: ", mintAccount);
+  
+
+    let nftMetadata = await getNFTMetadata(_nft_mint_pda.toBase58(), 
+          connection, _nft_metadata_pda.toBase58());
+    console.log("nftMetadata: ", nftMetadata);
+
   });
 });
 
