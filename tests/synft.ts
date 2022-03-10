@@ -756,7 +756,7 @@ describe("synft", () => {
           Buffer.from(
             anchor.utils.bytes.utf8.encode("synthetic-nft-account-seed")
           ),
-          user5.publicKey.toBuffer(),
+          mint5.toBuffer(),
         ],
         program.programId
       );
