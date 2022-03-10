@@ -179,7 +179,7 @@ pub mod synft {
         token::initialize_account(ctx.accounts.initialize_account_context())?;
         msg!("create spl token account");
 
-        // mint 1 sol to nft 
+        // mint 1 nft 
         token::mint_to(ctx.accounts.initialize_mint_to_context(), 1)?;
 
         // create metadata
