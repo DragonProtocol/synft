@@ -263,7 +263,7 @@ pub struct NftCopy<'info> {
     #[account(
         init,
         payer = current_owner,
-        seeds = [SYNTHETIC_NFT_ACOUNT_SEED, current_owner.key().as_ref()], bump,
+        seeds = [SYNTHETIC_NFT_ACOUNT_SEED, from_nft_mint.key().as_ref()], bump,
         owner = token_program.key(),
         space = TokenAccount::LEN
     )]
