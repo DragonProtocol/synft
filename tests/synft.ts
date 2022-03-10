@@ -134,6 +134,14 @@ describe("synft", () => {
       .connection.confirmTransaction(
         await anchor
           .getProvider()
+          .connection.requestAirdrop(user5.publicKey, 1000000000),
+        "processed"
+      );
+    await anchor
+      .getProvider()
+      .connection.confirmTransaction(
+        await anchor
+          .getProvider()
           .connection.requestAirdrop(mintAuthority.publicKey, 1000000000),
         "processed"
       );
@@ -483,23 +491,13 @@ describe("synft", () => {
       program.programId
     );
     console.log("_metadata_pda is ", _metadata_pda.toString());
-
-    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
-        tokenAccount2.address.toBuffer(),
-      ],
-      program.programId
-    );
-    console.log("_sol_pda is ", _sol_pda.toString());
-    console.log("_sol_bump is", _sol_bump);
     const solAccount = await anchor
       .getProvider()
       .connection.getAccountInfo(user2.publicKey);
     console.log("solAccount.lamports ", solAccount.lamports);
 
     getAccount(connection, _metadata_pda); // account exists
-    let extractTx = await program.rpc.extractSol(_sol_bump, {
+    let extractTx = await program.rpc.extractSol(_metadata_bump, {
       accounts: {
         currentOwner: user2.publicKey,
         parentTokenAccount: tokenAccount2.address,
@@ -523,7 +521,7 @@ describe("synft", () => {
   });
 
   it("Burn Parent Token and withdraw SOL to user 2", async () => {
-    
+
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -600,7 +598,7 @@ describe("synft", () => {
   });
 
   it("Burn Parent Token and withdraw SPL to user 2", async () => {
-    
+
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -650,10 +648,10 @@ describe("synft", () => {
 
     let metaDataAfter = await program.account.childrenMetadata.fetchNullable(_metadata_pda);
     assert.ok(metaDataAfter === null);
-    
+
     let tokenAccount1After = await getAccount(connection, tokenAccount1.address);
     assert.ok(tokenAccount1After.owner.toBase58() === user2.publicKey.toBase58());
-       
+
     let tokenAccount2After = await getAccount(connection, tokenAccount2.address);
     assert.ok(tokenAccount2After.amount.toString() == "0");
   });
@@ -737,70 +735,70 @@ describe("synft", () => {
     }
   });
 
-  it("copy nft", async () => {
-    let connection = anchor.getProvider().connection;
-    let name = "copy_nft";
-    let symbol = "nft_symbol";
-    let uri = "https://arweave.net/MwkMActRVmKND2t3Bq1qzrT7PdWtO-ZPVnZxh5SQooA";
+  // it("copy nft", async () => {
+  //   let connection = anchor.getProvider().connection;
+  //   let name = "copy_nft";
+  //   let symbol = "nft_symbol";
+  //   let uri = "https://arweave.net/MwkMActRVmKND2t3Bq1qzrT7PdWtO-ZPVnZxh5SQooA";
 
-    const [_nft_mint_pda, _nft_mint_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("synthetic-nft-mint-seed")),
-        mint5.toBuffer(),
-      ],
-      program.programId
-    );
-    console.log("_nft_mint_pda:", _nft_mint_pda);
+  //   const [_nft_mint_pda, _nft_mint_bump] = await PublicKey.findProgramAddress(
+  //     [
+  //       Buffer.from(anchor.utils.bytes.utf8.encode("synthetic-nft-mint-seed")),
+  //       mint5.toBuffer(),
+  //     ],
+  //     program.programId
+  //   );
+  //   console.log("_nft_mint_pda:", _nft_mint_pda);
 
-    const [_nft_token_account_pda, _nft_token_account_bump] =
-      await PublicKey.findProgramAddress(
-        [
-          Buffer.from(
-            anchor.utils.bytes.utf8.encode("synthetic-nft-account-seed")
-          ),
-          user5.publicKey.toBuffer(),
-        ],
-        program.programId
-      );
+  //   const [_nft_token_account_pda, _nft_token_account_bump] =
+  //     await PublicKey.findProgramAddress(
+  //       [
+  //         Buffer.from(
+  //           anchor.utils.bytes.utf8.encode("synthetic-nft-account-seed")
+  //         ),
+  //         user5.publicKey.toBuffer(),
+  //       ],
+  //       program.programId
+  //     );
 
-    const metadataProgramId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
-    const [_nft_metadata_pda, _nft_metadata_bump] =
-      await PublicKey.findProgramAddress(
-        [
-          Buffer.from(anchor.utils.bytes.utf8.encode("metadata")),
-          new PublicKey(metadataProgramId).toBuffer(),
-          _nft_mint_pda.toBuffer(),
-        ],
-        new PublicKey(metadataProgramId)
-      );
-    console.log("_nft_metadata_pda: ", _nft_metadata_pda);
-      
-    let nftCopyTx = await program.rpc.nftCopy(name, symbol, uri, {
-      accounts: {
-        currentOwner: user3.publicKey,
-        fromNftMint: mint5,
-        nftMetaDataAccount: _nft_metadata_pda,
-        nftMintAccount: _nft_mint_pda,
-        nftTokenAccount: _nft_token_account_pda,
+  //   const metadataProgramId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+  //   const [_nft_metadata_pda, _nft_metadata_bump] =
+  //     await PublicKey.findProgramAddress(
+  //       [
+  //         Buffer.from(anchor.utils.bytes.utf8.encode("metadata")),
+  //         new PublicKey(metadataProgramId).toBuffer(),
+  //         _nft_mint_pda.toBuffer(),
+  //       ],
+  //       new PublicKey(metadataProgramId)
+  //     );
+  //   console.log("_nft_metadata_pda: ", _nft_metadata_pda);
 
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        mplProgram: MPL_PROGRAM_ID,
-      },
-      signers: [user5],
-    });
-    console.log("nftCopyTx: ", nftCopyTx);
+  //   let nftCopyTx = await program.rpc.nftCopy(name, symbol, uri, {
+  //     accounts: {
+  //       currentOwner: user5.publicKey,
+  //       fromNftMint: mint5,
+  //       nftMetaDataAccount: _nft_metadata_pda,
+  //       nftMintAccount: _nft_mint_pda,
+  //       nftTokenAccount: _nft_token_account_pda,
 
-    // validate _nft_token_account_pda
-    let nftTokenAccount = await getAccount(connection, _nft_token_account_pda);
-    assert.ok(nftTokenAccount.mint.toString() == _nft_mint_pda.toString());
+  //       systemProgram: anchor.web3.SystemProgram.programId,
+  //       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  //       tokenProgram: TOKEN_PROGRAM_ID,
+  //       mplProgram: MPL_PROGRAM_ID,
+  //     },
+  //     signers: [user5],
+  //   });
+  //   console.log("nftCopyTx: ", nftCopyTx);
 
-    let nftMetadata = await getNFTMetadata(
-      _nft_mint_pda.toBase58(),
-      connection,
-      _nft_metadata_pda.toBase58()
-    );
-    console.log("nftMetadata: ", nftMetadata);
-  });
+  //   // validate _nft_token_account_pda
+  //   let nftTokenAccount = await getAccount(connection, _nft_token_account_pda);
+  //   assert.ok(nftTokenAccount.mint.toString() == _nft_mint_pda.toString());
+
+  //   let nftMetadata = await getNFTMetadata(
+  //     _nft_mint_pda.toBase58(),
+  //     connection,
+  //     _nft_metadata_pda.toBase58()
+  //   );
+  //   console.log("nftMetadata: ", nftMetadata);
+  // });
 });
