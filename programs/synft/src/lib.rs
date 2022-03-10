@@ -1,13 +1,13 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{
-    self, InitializeAccount, InitializeMint, Mint, SetAuthority, Token, TokenAccount, Transfer,Burn
+    self, InitializeAccount, InitializeMint, Mint,MintTo, SetAuthority, Token, TokenAccount, Transfer,Burn
 };
 use mpl_token_metadata::instruction::create_metadata_accounts_v2;
 use solana_program::program::invoke;
 use solana_program::system_instruction;
 use spl_token::instruction::AuthorityType;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("nftbxaFtUMxSip8eMTKCPbX9HvjKQmcREG6NyQ23auD");
 const CHILDREN_PDA_SEED: &[u8] = b"children-of";
 const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
 const SYNTHETIC_NFT_MINT_SEED: &[u8] = b"synthetic-nft-mint-seed";
@@ -175,9 +175,14 @@ pub mod synft {
         )?;
         msg!("create mint account");
 
-        // // create spl token account
+        // create spl token account
         token::initialize_account(ctx.accounts.initialize_account_context())?;
         msg!("create spl token account");
+
+        // mint 1 nft 
+        token::mint_to(ctx.accounts.initialize_mint_to_context(), 1)?;
+
+        // create metadata
         invoke(
             &create_metadata_accounts_v2(
                 mpl_token_metadata::ID,
@@ -280,6 +285,14 @@ impl<'info> NftCopy<'info> {
         let cpi_accounts = InitializeMint {
             mint: self.nft_mint_account.clone(),
             rent: self.rent.to_account_info(),
+        };
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
+    }
+    fn initialize_mint_to_context(&self) -> CpiContext<'_, '_, '_, 'info, MintTo<'info>> {
+        let cpi_accounts = MintTo {
+            mint: self.nft_mint_account.clone(),
+            to: self.nft_token_account.to_account_info(),
+            authority: self.current_owner.to_account_info(),
         };
         CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
     }

@@ -793,7 +793,7 @@ describe("synft", () => {
     // validate _nft_token_account_pda
     let nftTokenAccount = await getAccount(connection, _nft_token_account_pda);
     assert.ok(nftTokenAccount.mint.toString() == _nft_mint_pda.toString());
-
+    assert.ok(nftTokenAccount.amount == 1);
     let nftMetadata = await getNFTMetadata(
       _nft_mint_pda.toBase58(),
       connection,
