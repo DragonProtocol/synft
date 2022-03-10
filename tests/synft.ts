@@ -23,6 +23,46 @@ import { Synft } from "../target/types/synft";
 import { assert, expect } from "chai";
 import { token } from "@project-serum/anchor/dist/cjs/utils";
 
+import axios from "axios";
+import { programs } from "@metaplex/js";
+
+const {
+  metadata: { Metadata },
+} = programs;
+
+var MPL_PROGRAM_ID = new PublicKey(
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+);
+
+export interface INFT {
+  pubkey?: PublicKey;
+  mint: PublicKey;
+  onchainMetadata: unknown;
+  externalMetadata: unknown;
+}
+
+async function getNFTMetadata(
+  mint: string,
+  conn: Connection,
+  pubkey?: string
+): Promise<INFT | undefined> {
+  // console.log('Pulling metadata for:', mint);
+  try {
+    const metadataPDA = await Metadata.getPDA(mint);
+    const onchainMetadata = (await Metadata.load(conn, metadataPDA)).data;
+    console.log("onchainMetadata.data.uri:", onchainMetadata.data.uri);
+    const externalMetadata = (await axios.get(onchainMetadata.data.uri)).data;
+    return {
+      pubkey: pubkey ? new PublicKey(pubkey) : undefined,
+      mint: new PublicKey(mint),
+      onchainMetadata,
+      externalMetadata,
+    };
+  } catch (e) {
+    console.log(`failed to pull metadata for token ${mint}`);
+  }
+}
+
 describe("synft", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.Provider.env());
@@ -38,16 +78,22 @@ describe("synft", () => {
    */
   const user1 = anchor.web3.Keypair.generate();
   const user2 = anchor.web3.Keypair.generate();
+  const user3 = anchor.web3.Keypair.generate();
+  const user4 = anchor.web3.Keypair.generate();
+  const user5 = anchor.web3.Keypair.generate();
   const mintAuthority = anchor.web3.Keypair.generate();
   const payer = anchor.web3.Keypair.generate();
   let mint1 = null;
   let mint2 = null;
   let mint3 = null;
   let mint4 = null;
+  let mint5 = null as PublicKey;
   let tokenAccount1 = null as Account;
   let tokenAccount2 = null as Account;
   let tokenAccount3 = null as Account;
   let tokenAccount4 = null as Account;
+  let tokenAccount5 = null as Account;
+
 
   it("Is initialized!", async () => {
     let connection = anchor.getProvider().connection;
@@ -73,6 +119,22 @@ describe("synft", () => {
         await anchor
           .getProvider()
           .connection.requestAirdrop(user2.publicKey, 1000000000),
+        "processed"
+      );
+    await anchor
+      .getProvider()
+      .connection.confirmTransaction(
+        await anchor
+          .getProvider()
+          .connection.requestAirdrop(user3.publicKey, 1000000000),
+        "processed"
+      );
+    await anchor
+      .getProvider()
+      .connection.confirmTransaction(
+        await anchor
+          .getProvider()
+          .connection.requestAirdrop(user5.publicKey, 1000000000),
         "processed"
       );
     await anchor
@@ -117,6 +179,13 @@ describe("synft", () => {
       mintAuthority.publicKey,
       0
     );
+    mint5 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
     tokenAccount1 = await getOrCreateAssociatedTokenAccount(
       connection,
       payer,
@@ -145,10 +214,18 @@ describe("synft", () => {
       user2.publicKey,
       true
     );
+    tokenAccount5 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint5,
+      user5.publicKey,
+      true
+    );
     assert.ok(tokenAccount1.owner.toString() == user1.publicKey.toString());
     assert.ok(tokenAccount2.owner.toString() == user2.publicKey.toString());
     assert.ok(tokenAccount3.owner.toString() == user1.publicKey.toString());
     assert.ok(tokenAccount4.owner.toString() == user2.publicKey.toString());
+    assert.ok(tokenAccount5.owner.toString() == user5.publicKey.toString());
     let signature1 = await mintTo(
       connection,
       payer,
@@ -188,8 +265,17 @@ describe("synft", () => {
       10,
       []
     );
-
     console.log("mint tx 4 :", signature4);
+    let signature5 = await mintTo(
+      connection,
+      payer,
+      mint5,
+      tokenAccount5.address,
+      mintAuthority,
+      10,
+      []
+    );
+    console.log("mint tx 5 :", signature5);
   });
 
   /**
@@ -405,23 +491,13 @@ describe("synft", () => {
       program.programId
     );
     console.log("_metadata_pda is ", _metadata_pda.toString());
-
-    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
-        tokenAccount2.address.toBuffer(),
-      ],
-      program.programId
-    );
-    console.log("_sol_pda is ", _sol_pda.toString());
-    console.log("_sol_bump is", _sol_bump);
     const solAccount = await anchor
       .getProvider()
       .connection.getAccountInfo(user2.publicKey);
     console.log("solAccount.lamports ", solAccount.lamports);
 
     getAccount(connection, _metadata_pda); // account exists
-    let extractTx = await program.rpc.extractSol(_sol_bump, {
+    let extractTx = await program.rpc.extractSol(_metadata_bump, {
       accounts: {
         currentOwner: user2.publicKey,
         parentTokenAccount: tokenAccount2.address,
@@ -445,7 +521,7 @@ describe("synft", () => {
   });
 
   it("Burn Parent Token and withdraw SOL to user 2", async () => {
-    
+
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -522,7 +598,7 @@ describe("synft", () => {
   });
 
   it("Burn Parent Token and withdraw SPL to user 2", async () => {
-    
+
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -572,10 +648,10 @@ describe("synft", () => {
 
     let metaDataAfter = await program.account.childrenMetadata.fetchNullable(_metadata_pda);
     assert.ok(metaDataAfter === null);
-    
+
     let tokenAccount1After = await getAccount(connection, tokenAccount1.address);
     assert.ok(tokenAccount1After.owner.toBase58() === user2.publicKey.toBase58());
-       
+
     let tokenAccount2After = await getAccount(connection, tokenAccount2.address);
     assert.ok(tokenAccount2After.amount.toString() == "0");
   });
@@ -657,5 +733,72 @@ describe("synft", () => {
     } catch (error: any) {
       assert.ok(error.message == "TokenAccountNotFoundError");
     }
+  });
+
+  it("copy nft", async () => {
+    let connection = anchor.getProvider().connection;
+    let name = "copy_nft";
+    let symbol = "nft_symbol";
+    let uri = "https://arweave.net/MwkMActRVmKND2t3Bq1qzrT7PdWtO-ZPVnZxh5SQooA";
+
+    const [_nft_mint_pda, _nft_mint_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("synthetic-nft-mint-seed")),
+        mint5.toBuffer(),
+      ],
+      program.programId
+    );
+    console.log("_nft_mint_pda:", _nft_mint_pda);
+
+    const [_nft_token_account_pda, _nft_token_account_bump] =
+      await PublicKey.findProgramAddress(
+        [
+          Buffer.from(
+            anchor.utils.bytes.utf8.encode("synthetic-nft-account-seed")
+          ),
+          user5.publicKey.toBuffer(),
+        ],
+        program.programId
+      );
+
+    const metadataProgramId = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+    const [_nft_metadata_pda, _nft_metadata_bump] =
+      await PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("metadata")),
+          new PublicKey(metadataProgramId).toBuffer(),
+          _nft_mint_pda.toBuffer(),
+        ],
+        new PublicKey(metadataProgramId)
+      );
+    console.log("_nft_metadata_pda: ", _nft_metadata_pda);
+
+    let nftCopyTx = await program.rpc.nftCopy(name, symbol, uri, {
+      accounts: {
+        currentOwner: user5.publicKey,
+        fromNftMint: mint5,
+        nftMetaDataAccount: _nft_metadata_pda,
+        nftMintAccount: _nft_mint_pda,
+        nftTokenAccount: _nft_token_account_pda,
+
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        mplProgram: MPL_PROGRAM_ID,
+      },
+      signers: [user5],
+    });
+    console.log("nftCopyTx: ", nftCopyTx);
+
+    // validate _nft_token_account_pda
+    let nftTokenAccount = await getAccount(connection, _nft_token_account_pda);
+    assert.ok(nftTokenAccount.mint.toString() == _nft_mint_pda.toString());
+
+    let nftMetadata = await getNFTMetadata(
+      _nft_mint_pda.toBase58(),
+      connection,
+      _nft_metadata_pda.toBase58()
+    );
+    console.log("nftMetadata: ", nftMetadata);
   });
 });
