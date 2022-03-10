@@ -286,9 +286,12 @@ pub struct Extract<'info> {
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
+        // owner--> parent_token_account--> children_meta --> chilren_token_account
         constraint = children_meta.child == *child_token_account.to_account_info().key,
         constraint = children_meta.bump == _bump,
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        seeds =  [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], 
+        bump = children_meta.bump,
         close = current_owner
     )]
     children_meta: Box<Account<'info, ChildrenMetadata>>,
@@ -310,6 +313,7 @@ impl<'info> Extract<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(_bump: u8)]
 pub struct ExtractSol<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
@@ -317,7 +321,11 @@ pub struct ExtractSol<'info> {
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
+        // owner--> parent_token_account--> children_meta --> chilren_token_account
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        constraint = children_meta.bump == _bump,
+        seeds =  [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], 
+        bump = children_meta.bump,
         close = current_owner
     )]
     children_meta: Box<Account<'info, ChildrenMetadata>>,
@@ -336,7 +344,10 @@ pub struct BurnForSol<'info> {
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
+        // owner--> parent_token_account--> children_meta
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        seeds =  [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], 
+        bump = children_meta.bump,
         close = current_owner
     )]
     children_meta: Box<Account<'info, ChildrenMetadata>>,
@@ -370,7 +381,11 @@ pub struct BurnForToken<'info> {
     pub child_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
+        // owner--> parent_token_account--> children_meta --> chilren_token_account
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        constraint = children_meta.child == *child_token_account.to_account_info().key,
+        seeds =  [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], 
+        bump = children_meta.bump,
         close = current_owner
     )]
     children_meta: Box<Account<'info, ChildrenMetadata>>,
