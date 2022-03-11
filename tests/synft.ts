@@ -81,8 +81,8 @@ describe("synft", () => {
   const mintAuthority = anchor.web3.Keypair.generate();
   const payer = anchor.web3.Keypair.generate();
   let mint1 = null;
-  let mint2 = null;
-  let mint3 = null;
+  let mint2 = null as PublicKey;
+  let mint3 = null as PublicKey;
   let mint4 = null;
   let mint5 = null as PublicKey;
   let tokenAccount1 = null as Account;
@@ -255,7 +255,7 @@ describe("synft", () => {
       mint4,
       tokenAccount4.address,
       mintAuthority,
-      10,
+      1,
       []
     );
     let signature5 = await mintTo(
@@ -278,7 +278,7 @@ describe("synft", () => {
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount2.address.toBuffer(),
+        mint2.toBuffer(),
       ],
       program.programId
     );
@@ -304,6 +304,7 @@ describe("synft", () => {
           currentOwner: user1.publicKey,
           ownerTokenAccount: tokenAccount1.address,
           parentTokenAccount: tokenAccount2.address,
+          parentMintAccount: tokenAccount2.mint,
           childrenMeta: _metadata_pda,
           mint: mint1,
           fungibleTokenAccount: _fungible_token_pda,
@@ -347,7 +348,7 @@ describe("synft", () => {
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount2.address.toBuffer(),
+        mint2.toBuffer(),
       ],
       program.programId
     );
@@ -367,6 +368,7 @@ describe("synft", () => {
         currentOwner: user2.publicKey,
         childTokenAccount: _fungible_token_pda,
         parentTokenAccount: tokenAccount2.address,
+        parentMintAccount: tokenAccount2.mint,
         childrenMeta: _metadata_pda,
 
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -391,7 +393,7 @@ describe("synft", () => {
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount2.address.toBuffer(),
+        mint2.toBuffer(),
       ],
       program.programId
     );
@@ -411,6 +413,7 @@ describe("synft", () => {
         accounts: {
           currentOwner: user1.publicKey,
           parentTokenAccount: tokenAccount2.address,
+          parentMintAccount : tokenAccount2.mint,
           childrenMeta: _metadata_pda,
 
           systemProgram: anchor.web3.SystemProgram.programId,
@@ -448,7 +451,7 @@ describe("synft", () => {
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount2.address.toBuffer(),
+        mint2.toBuffer(),
       ],
       program.programId
     );
@@ -461,6 +464,7 @@ describe("synft", () => {
       accounts: {
         currentOwner: user2.publicKey,
         parentTokenAccount: tokenAccount2.address,
+        parentMintAccount: tokenAccount2.mint,
         childrenMeta: _metadata_pda,
 
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -482,7 +486,7 @@ describe("synft", () => {
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount2.address.toBuffer(),
+        mint2.toBuffer(),
       ],
       program.programId
     );
@@ -500,6 +504,7 @@ describe("synft", () => {
         accounts: {
           currentOwner: user1.publicKey,
           parentTokenAccount: tokenAccount2.address,
+          parentMintAccount: tokenAccount2.mint,
           childrenMeta: _metadata_pda,
 
           systemProgram: anchor.web3.SystemProgram.programId,
@@ -518,7 +523,7 @@ describe("synft", () => {
     let extractTx = await program.rpc.burnForSol({
       accounts: {
         currentOwner: user2.publicKey,
-        parentTokenMint: tokenAccount2.mint,
+        parentMintAccount: tokenAccount2.mint,
         parentTokenAccount: tokenAccount2.address,
         childrenMeta: _metadata_pda,
 
@@ -543,15 +548,27 @@ describe("synft", () => {
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount2.address.toBuffer(),
+        mint2.toBuffer(),
       ],
       program.programId
     );
+   
+    await mintTo(
+      connection,
+      payer,
+      mint2,
+      tokenAccount2.address,
+      mintAuthority,
+      1,
+      []
+    );
+
     let initTx = await program.rpc.initializeInject(false, _metadata_bump, {
       accounts: {
         currentOwner: user1.publicKey,
         childTokenAccount: tokenAccount1.address,
         parentTokenAccount: tokenAccount2.address,
+        parentMintAccount: tokenAccount2.mint,
         childrenMeta: _metadata_pda,
 
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -569,7 +586,7 @@ describe("synft", () => {
     let extractTx = await program.rpc.burnForToken({
       accounts: {
         currentOwner: user2.publicKey,
-        parentTokenMint: tokenAccount2.mint,
+        parentMintAccount: tokenAccount2.mint,
         parentTokenAccount: tokenAccount2.address,
         childTokenAccount: tokenAccount1.address,
         childrenMeta: _metadata_pda,
@@ -600,16 +617,19 @@ describe("synft", () => {
     const [_metadata_pda4, _metadata_bump4] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount4.address.toBuffer(),
+        mint4.toBuffer(),
       ],
       program.programId
     );
     assert.ok(tokenAccount3.owner.toBase58() === user1.publicKey.toBase58());
+    // tokenAccount4 = await getAccount(connection, tokenAccount4.address);
+    // console.log(tokenAccount4.amount);
     let initTx = await program.rpc.initializeInject(true, _metadata_bump4, {
       accounts: {
         currentOwner: user1.publicKey,
         childTokenAccount: tokenAccount3.address,
         parentTokenAccount: tokenAccount4.address,
+        parentMintAccount: tokenAccount4.mint,
         childrenMeta: _metadata_pda4,
 
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -636,7 +656,7 @@ describe("synft", () => {
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        tokenAccount4.address.toBuffer(),
+        mint4.toBuffer(),
       ],
       program.programId
     );
@@ -647,6 +667,7 @@ describe("synft", () => {
         currentOwner: user2.publicKey,
         childTokenAccount: tokenAccount3.address,
         parentTokenAccount: tokenAccount4.address,
+        parentMintAccount: tokenAccount4.mint,
         childrenMeta: _metadata_pda,
 
         systemProgram: anchor.web3.SystemProgram.programId,

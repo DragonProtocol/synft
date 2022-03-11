@@ -19,12 +19,14 @@ pub struct InitializeFungibleTokenInject<'info> {
     #[account(mut)]
     pub owner_token_account: Account<'info, TokenAccount>,
     pub parent_token_account: Account<'info, TokenAccount>,
+    pub parent_mint_account: Account<'info, Mint>,
     #[account(
         init,
         payer = current_owner,
         // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump + 4 child type
         space = 8+1+1+32+1+4,
-        seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
+        constraint = parent_token_account.mint == parent_mint_account.key(),
+        seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadata>>,
 
@@ -68,7 +70,7 @@ pub fn handler(
 
     let parent_key = ctx
         .accounts
-        .parent_token_account
+        .parent_mint_account
         .to_account_info()
         .key
         .as_ref();

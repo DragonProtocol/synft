@@ -12,7 +12,7 @@ pub struct BurnForToken<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(mut)]
-    pub parent_token_mint: Account<'info, Mint>,
+    pub parent_mint_account: Account<'info, Mint>,
     #[account(mut)]
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
@@ -22,7 +22,8 @@ pub struct BurnForToken<'info> {
         // owner--> parent_token_account--> children_meta --> chilren_token_account
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = children_meta.child == *child_token_account.to_account_info().key,
-        seeds =  [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], 
+        constraint = parent_token_account.mint == parent_mint_account.key(),
+        seeds =  [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], 
         bump = children_meta.bump,
         close = current_owner
     )]
@@ -36,7 +37,7 @@ pub struct BurnForToken<'info> {
 impl<'info> BurnForToken<'info> {
     fn into_burn_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
         let cpi_accounts = Burn {
-            mint: self.parent_token_mint.to_account_info().clone(),
+            mint: self.parent_mint_account.to_account_info().clone(),
             to: self.parent_token_account.to_account_info().clone(),
             authority: self.current_owner.to_account_info().clone(),
         };
@@ -63,7 +64,7 @@ pub fn handler(ctx: Context<BurnForToken>) -> Result<()> {
     let seeds = &[
         &CHILDREN_PDA_SEED[..],
         ctx.accounts
-            .parent_token_account
+            .parent_mint_account
             .to_account_info()
             .key
             .as_ref(),
