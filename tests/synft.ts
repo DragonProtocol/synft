@@ -397,13 +397,6 @@ describe("synft", () => {
     );
 
     const inject_sol_amount = 500000000;
-    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
-        tokenAccount2.address.toBuffer(),
-      ],
-      program.programId
-    );
 
     let user1Account = await anchor
       .getProvider()
@@ -493,16 +486,7 @@ describe("synft", () => {
       ],
       program.programId
     );
-
     const inject_sol_amount = 500000000;
-    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
-        tokenAccount2.address.toBuffer(),
-      ],
-      program.programId
-    );
-
     let user1Account = await anchor
       .getProvider()
       .connection.getAccountInfo(user1.publicKey);
