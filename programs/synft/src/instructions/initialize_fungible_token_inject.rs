@@ -25,6 +25,7 @@ pub struct InitializeFungibleTokenInject<'info> {
         payer = current_owner,
         // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump + 4 child type
         space = 8+1+1+32+1+4,
+        constraint = parent_token_account.mint == parent_mint_account.key(),
         seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadata>>,

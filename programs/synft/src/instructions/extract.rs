@@ -27,6 +27,7 @@ pub struct Extract<'info> {
         constraint = children_meta.child == *child_token_account.to_account_info().key,
         constraint = children_meta.bump == _bump,
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        constraint = parent_token_account.mint == parent_mint_account.key(),
         seeds =  [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], 
         bump = children_meta.bump,
         close = current_owner
