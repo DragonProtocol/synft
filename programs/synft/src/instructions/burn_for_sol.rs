@@ -10,14 +10,14 @@ pub struct BurnForSol<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(mut)]
-    pub parent_token_mint: Account<'info, Mint>,
+    pub parent_mint_account: Account<'info, Mint>,
     #[account(mut)]
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
-        // owner--> parent_token_account--> children_meta
+        // owner--> parent_mint_account--> children_meta
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
-        seeds =  [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], 
+        seeds =  [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], 
         bump = children_meta.bump,
         close = current_owner
     )]
@@ -31,7 +31,7 @@ pub struct BurnForSol<'info> {
 impl<'info> BurnForSol<'info> {
     fn into_burn_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
         let cpi_accounts = Burn {
-            mint: self.parent_token_mint.to_account_info().clone(),
+            mint: self.parent_mint_account.to_account_info().clone(),
             to: self.parent_token_account.to_account_info().clone(),
             authority: self.current_owner.to_account_info().clone(),
         };

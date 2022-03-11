@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use anchor_spl::token::{
-   TokenAccount
+   TokenAccount, Mint
 };
 
 use crate::state::metadata::{
@@ -16,12 +16,13 @@ pub struct ExtractSol<'info> {
     pub current_owner: Signer<'info>,
     #[account(mut)]
     pub parent_token_account: Account<'info, TokenAccount>,
+    pub parent_mint_account: Account<'info, Mint>,
     #[account(
         mut,
-        // owner--> parent_token_account--> children_meta --> chilren_token_account
+        // owner--> parent_mint_account--> children_meta --> chilren_token_account
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = children_meta.bump == _bump,
-        seeds =  [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], 
+        seeds =  [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], 
         bump = children_meta.bump,
         close = current_owner
     )]

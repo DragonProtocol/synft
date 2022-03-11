@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use anchor_spl::token::{
-    self, SetAuthority, Token, TokenAccount,
+    self, SetAuthority, Token, TokenAccount, Mint
 };
 use spl_token::instruction::AuthorityType;
 
@@ -19,13 +19,15 @@ pub struct Extract<'info> {
     #[account(mut)]
     pub child_token_account: Account<'info, TokenAccount>,
     pub parent_token_account: Account<'info, TokenAccount>,
+    pub parent_mint_account: Account<'info, Mint>,
+
     #[account(
         mut,
         // owner--> parent_token_account--> children_meta --> chilren_token_account
         constraint = children_meta.child == *child_token_account.to_account_info().key,
         constraint = children_meta.bump == _bump,
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
-        seeds =  [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], 
+        seeds =  [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], 
         bump = children_meta.bump,
         close = current_owner
     )]
@@ -54,7 +56,7 @@ pub fn handler(ctx: Context<Extract>, _bump: u8) -> Result<()> {
     let seeds = &[
         &CHILDREN_PDA_SEED[..],
         ctx.accounts
-            .parent_token_account
+            .parent_mint_account
             .to_account_info()
             .key
             .as_ref(),

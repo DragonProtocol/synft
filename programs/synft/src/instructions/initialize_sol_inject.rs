@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use anchor_spl::token::{
-    TokenAccount
+    TokenAccount, Mint
 };
 use solana_program::program::invoke;
 use solana_program::system_instruction;
@@ -19,12 +19,13 @@ pub struct InitializeSolInject<'info> {
     pub current_owner: Signer<'info>,
     #[account(mut)]
     pub parent_token_account: Account<'info, TokenAccount>,
+    pub parent_mint_account: Account<'info, Mint>,
     #[account(
         init,
         payer = current_owner,
         // space: 8 discriminator + 1 reversible + 1 index + 32 pubkey + 1 bump + 4 child type
         space = 8+1+1+32+1+4,
-        seeds = [CHILDREN_PDA_SEED, parent_token_account.key().as_ref()], bump
+        seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadata>>,
 
@@ -44,7 +45,7 @@ pub fn handler(
 
     let parent_key = ctx
         .accounts
-        .parent_token_account
+        .parent_mint_account
         .to_account_info()
         .key
         .as_ref();
