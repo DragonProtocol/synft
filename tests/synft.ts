@@ -46,11 +46,9 @@ async function getNFTMetadata(
   conn: Connection,
   pubkey?: string
 ): Promise<INFT | undefined> {
-  // console.log('Pulling metadata for:', mint);
   try {
     const metadataPDA = await Metadata.getPDA(mint);
     const onchainMetadata = (await Metadata.load(conn, metadataPDA)).data;
-    console.log("onchainMetadata.data.uri:", onchainMetadata.data.uri);
     const externalMetadata = (await axios.get(onchainMetadata.data.uri)).data;
     return {
       pubkey: pubkey ? new PublicKey(pubkey) : undefined,
@@ -66,7 +64,6 @@ async function getNFTMetadata(
 describe("synft", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.Provider.env());
-
   const program = anchor.workspace.Synft as Program<Synft>;
 
   /**
@@ -93,7 +90,6 @@ describe("synft", () => {
   let tokenAccount3 = null as Account;
   let tokenAccount4 = null as Account;
   let tokenAccount5 = null as Account;
-
 
   it("Is initialized!", async () => {
     let connection = anchor.getProvider().connection;
@@ -235,7 +231,6 @@ describe("synft", () => {
       10,
       []
     );
-    console.log("mint tx 1 :", signature1);
     let signature2 = await mintTo(
       connection,
       payer,
@@ -245,7 +240,6 @@ describe("synft", () => {
       10,
       []
     );
-    console.log("mint tx 2 :", signature2);
     let signature3 = await mintTo(
       connection,
       payer,
@@ -255,7 +249,6 @@ describe("synft", () => {
       10,
       []
     );
-    console.log("mint tx 3 :", signature3);
     let signature4 = await mintTo(
       connection,
       payer,
@@ -265,7 +258,6 @@ describe("synft", () => {
       10,
       []
     );
-    console.log("mint tx 4 :", signature4);
     let signature5 = await mintTo(
       connection,
       payer,
@@ -275,7 +267,6 @@ describe("synft", () => {
       10,
       []
     );
-    console.log("mint tx 5 :", signature5);
   });
 
   /**
@@ -291,9 +282,6 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_metadata_pda is ", _metadata_pda.toString());
-    console.log("_metadata_bump is", _metadata_bump);
-
     const inject_fungible_token_amount = 1;
     const [_fungible_token_pda, _fungible_token_bump] =
       await PublicKey.findProgramAddress(
@@ -303,11 +291,8 @@ describe("synft", () => {
         ],
         program.programId
       );
-    console.log("_fungible_token_pda is ", _fungible_token_pda.toString());
-    console.log("_fungible_token_bump is", _fungible_token_bump);
 
     tokenAccount1 = await getAccount(connection, tokenAccount1.address);
-    console.log("tokenAccount1 amount is", tokenAccount1.amount);
     const tokenAccount1Amount = tokenAccount1.amount;
 
     let initTx = await program.rpc.initializeFungibleTokenInject(
@@ -330,8 +315,6 @@ describe("synft", () => {
         signers: [user1],
       }
     );
-    console.log("initTx :", initTx);
-    console.log("_fungible_token_pda :", _fungible_token_pda);
 
     // volidate the balance of tokenAccount 1
     tokenAccount1 = await getAccount(connection, tokenAccount1.address);
@@ -360,7 +343,6 @@ describe("synft", () => {
   });
 
   it("Extract fungible token to user 2", async () => {
-    console.log("Extracting");
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -369,7 +351,6 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_metadata_pda is ", _metadata_pda.toString());
 
     const [_fungible_token_pda, _fungible_token_bump] =
       await PublicKey.findProgramAddress(
@@ -379,8 +360,6 @@ describe("synft", () => {
         ],
         program.programId
       );
-    console.log("_fungible_token_pda is ", _fungible_token_pda.toString());
-    console.log("_fungible_token_bump is", _fungible_token_bump);
 
     getAccount(connection, _metadata_pda); // account exists
     let extractTx = await program.rpc.extract(_metadata_bump, {
@@ -396,7 +375,6 @@ describe("synft", () => {
       },
       signers: [user2],
     });
-    console.log("extractTx :", extractTx);
     try {
       getAccount(connection, _metadata_pda);
     } catch (error: any) {
@@ -417,8 +395,6 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_metadata_pda is ", _metadata_pda.toString());
-    console.log("_metadata_bump is", _metadata_bump);
 
     const inject_sol_amount = 500000000;
     const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
@@ -428,13 +404,10 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_sol_pda is ", _sol_pda.toString());
-    console.log("_sol_bump is", _sol_bump);
 
     let user1Account = await anchor
       .getProvider()
       .connection.getAccountInfo(user1.publicKey);
-    console.log("tokenAccount1 lamports is", user1Account.lamports);
     const tokenAccount1Amount = user1Account.lamports;
 
     let initTx = await program.rpc.initializeSolInject(
@@ -453,14 +426,11 @@ describe("synft", () => {
         signers: [user1],
       }
     );
-    console.log("initTx :", initTx);
-    console.log("_sol_pda :", _sol_pda);
 
     // volidate the balance of tokenAccount 1
     user1Account = await anchor
       .getProvider()
       .connection.getAccountInfo(user1.publicKey);
-    console.log("tokenAccount1 lamports is", user1Account.lamports);
 
     assert.ok(
       user1Account.lamports,
@@ -481,7 +451,6 @@ describe("synft", () => {
   });
 
   it("Extract SOL to user 2", async () => {
-    console.log("Extracting");
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -490,11 +459,9 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_metadata_pda is ", _metadata_pda.toString());
     const solAccount = await anchor
       .getProvider()
       .connection.getAccountInfo(user2.publicKey);
-    console.log("solAccount.lamports ", solAccount.lamports);
 
     getAccount(connection, _metadata_pda); // account exists
     let extractTx = await program.rpc.extractSol(_metadata_bump, {
@@ -508,20 +475,16 @@ describe("synft", () => {
       },
       signers: [user2],
     });
-    console.log("extractTx :", extractTx);
     const solAccountUser2 = await anchor
       .getProvider()
       .connection.getAccountInfo(user2.publicKey);
-    console.log("solAccountUser2.lamports ", solAccountUser2.lamports);
     assert.ok(solAccountUser2.lamports > 1500000000);
-
 
     let metaDataAfter = await program.account.childrenMetadata.fetchNullable(_metadata_pda);
     assert.ok(metaDataAfter === null);
   });
 
   it("Burn Parent Token and withdraw SOL to user 2", async () => {
-
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -530,8 +493,6 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_metadata_pda is ", _metadata_pda.toString());
-    console.log("_metadata_bump is", _metadata_bump);
 
     const inject_sol_amount = 500000000;
     const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
@@ -541,13 +502,10 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_sol_pda is ", _sol_pda.toString());
-    console.log("_sol_bump is", _sol_bump);
 
     let user1Account = await anchor
       .getProvider()
       .connection.getAccountInfo(user1.publicKey);
-    console.log("tokenAccount1 lamports is", user1Account.lamports);
     const tokenAccount1Amount = user1Account.lamports;
 
     let initTx = await program.rpc.initializeSolInject(
@@ -589,9 +547,7 @@ describe("synft", () => {
     const solAccountUser2 = await anchor
       .getProvider()
       .connection.getAccountInfo(user2.publicKey);
-    console.log("solAccountUser2.lamports ", solAccountUser2.lamports);
     assert.ok(solAccountUser2.lamports > 2000000000);
-
 
     let metaDataAfter = await program.account.childrenMetadata.fetchNullable(_metadata_pda);
     assert.ok(metaDataAfter === null);
@@ -607,9 +563,6 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_metadata_pda is ", _metadata_pda.toString());
-    console.log(_metadata_bump);
-    console.log("DONE");
     let initTx = await program.rpc.initializeInject(false, _metadata_bump, {
       accounts: {
         currentOwner: user1.publicKey,
@@ -623,12 +576,10 @@ describe("synft", () => {
       },
       signers: [user1],
     });
-    console.log("initTx :", initTx);
     let childrenMeta = await program.account.childrenMetadata.fetch(
       _metadata_pda
     );
     assert.ok(childrenMeta.reversible == false);
-
 
     getAccount(connection, _metadata_pda); // account exists
     let extractTx = await program.rpc.burnForToken({
@@ -669,9 +620,6 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_metadata_pda is ", _metadata_pda4.toString());
-    console.log(_metadata_bump4);
-    console.log("DONE");
     assert.ok(tokenAccount3.owner.toBase58() === user1.publicKey.toBase58());
     let initTx = await program.rpc.initializeInject(true, _metadata_bump4, {
       accounts: {
@@ -686,12 +634,10 @@ describe("synft", () => {
       },
       signers: [user1],
     });
-    console.log("initTx :", initTx);
     let childrenMeta = await program.account.childrenMetadata.fetch(
       _metadata_pda4
     );
     assert.ok(childrenMeta.reversible == true);
-    console.log("before setAuthority ", tokenAccount3.owner.toString());
     assert.ok(childrenMeta.bump == _metadata_bump4);
     tokenAccount3 = await getAccount(connection, tokenAccount3.address);
     assert.ok(tokenAccount3.owner.equals(_metadata_pda4));
@@ -702,7 +648,6 @@ describe("synft", () => {
    * check NFT owner now becomes user 1
    */
   it("Extract NFT", async () => {
-    console.log("Extracting");
     let connection = anchor.getProvider().connection;
     const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
       [
@@ -711,7 +656,6 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_metadata_pda is ", _metadata_pda.toString());
 
     getAccount(connection, _metadata_pda); // account exists
     let extractTx = await program.rpc.extract(_metadata_bump, {
@@ -727,7 +671,6 @@ describe("synft", () => {
       },
       signers: [user2],
     });
-    console.log("extractTx :", extractTx);
     try {
       getAccount(connection, _metadata_pda);
     } catch (error: any) {
@@ -748,7 +691,6 @@ describe("synft", () => {
       ],
       program.programId
     );
-    console.log("_nft_mint_pda:", _nft_mint_pda);
 
     const [_nft_token_account_pda, _nft_token_account_bump] =
       await PublicKey.findProgramAddress(
@@ -771,7 +713,6 @@ describe("synft", () => {
         ],
         new PublicKey(metadataProgramId)
       );
-    console.log("_nft_metadata_pda: ", _nft_metadata_pda);
 
     let nftCopyTx = await program.rpc.nftCopy(name, symbol, uri, {
       accounts: {
@@ -788,17 +729,16 @@ describe("synft", () => {
       },
       signers: [user5],
     });
-    console.log("nftCopyTx: ", nftCopyTx);
 
     // validate _nft_token_account_pda
-    let nftTokenAccount = await getAccount(connection, _nft_token_account_pda);
+    const nftTokenAccount = await getAccount(connection, _nft_token_account_pda);
     assert.ok(nftTokenAccount.mint.toString() == _nft_mint_pda.toString());
     assert.ok(nftTokenAccount.amount == 1);
-    let nftMetadata = await getNFTMetadata(
+    const nftMetadata = await getNFTMetadata(
       _nft_mint_pda.toBase58(),
       connection,
       _nft_metadata_pda.toBase58()
     );
-    console.log("nftMetadata: ", nftMetadata);
+    assert.ok(nftMetadata.mint.toString() == _nft_mint_pda.toString());
   });
 });
