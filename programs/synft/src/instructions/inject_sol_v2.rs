@@ -4,7 +4,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 use solana_program::program::invoke;
 use solana_program::system_instruction;
 
-use crate::state::metadata::{SolAccount, ErrorCode, SOL_PDA_SEED};
+use crate::state::metadata::{SolAccount, SOL_PDA_SEED};
 
 #[derive(Accounts)]
 pub struct InjectSolV2<'info> {
@@ -30,23 +30,9 @@ pub struct InjectSolV2<'info> {
 
 pub fn handler(
     ctx: Context<InjectSolV2>,
-    bump: u8,
+    _bump: u8,
     inject_sol_amount: u64,
 ) -> Result<()> {
-
-    let parent_key = ctx
-        .accounts
-        .parent_mint_account
-        .to_account_info()
-        .key
-        .as_ref();
-    let (_, pda_bump) = Pubkey::find_program_address(
-        &[&SOL_PDA_SEED[..], parent_key],
-        &(ctx.program_id),
-    );
-    if bump != pda_bump {
-        return err!(ErrorCode::InvalidMetadataBump);
-    }
 
     invoke(
         &system_instruction::transfer(

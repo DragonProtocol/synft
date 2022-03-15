@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, ErrorCode, CHILDREN_PDA_SEED};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
@@ -49,18 +49,6 @@ pub fn handler(ctx: Context<TransferChildNftV2>, is_mutable: bool, bump: u8) -> 
     ctx.accounts.children_meta.root = *ctx.accounts.parent_mint_account.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
     ctx.accounts.children_meta.is_mutated = false;
-    let parent_key = ctx
-        .accounts
-        .parent_mint_account
-        .to_account_info()
-        .key
-        .as_ref();
-
-    let (_, children_pda_bump) =
-        Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
-    if bump != children_pda_bump {
-        return err!(ErrorCode::InvalidMetadataBump);
-    }
 
     token::set_authority(
         ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI

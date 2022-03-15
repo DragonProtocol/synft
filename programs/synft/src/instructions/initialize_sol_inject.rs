@@ -7,7 +7,7 @@ use solana_program::program::invoke;
 use solana_program::system_instruction;
 
 use crate::state::metadata::{
-    ChildType, CHILDREN_PDA_SEED, ChildrenMetadata, ErrorCode
+    ChildType, CHILDREN_PDA_SEED, ChildrenMetadata
 };
 
 
@@ -43,18 +43,6 @@ pub fn handler(
     ctx.accounts.children_meta.reversible = reversible;
     ctx.accounts.children_meta.bump = bump;
     ctx.accounts.children_meta.child_type = ChildType::SOL;
-
-    let parent_key = ctx
-        .accounts
-        .parent_mint_account
-        .to_account_info()
-        .key
-        .as_ref();
-    let (_, children_pda_bump) =
-        Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
-    if bump != children_pda_bump {
-        return err!(ErrorCode::InvalidMetadataBump);
-    }
 
     invoke(
         &system_instruction::transfer(

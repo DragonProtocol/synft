@@ -4,7 +4,7 @@ use anchor_spl::token::{
 };
 use spl_token::instruction::AuthorityType;
 use crate::state::metadata::{
-    ChildType, CHILDREN_PDA_SEED, ChildrenMetadata, ErrorCode
+    ChildType, CHILDREN_PDA_SEED, ChildrenMetadata
 };
 
 
@@ -54,18 +54,6 @@ pub fn handler(
     ctx.accounts.children_meta.bump = bump;
     ctx.accounts.children_meta.child = *ctx.accounts.child_token_account.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
-    let parent_key = ctx
-        .accounts
-        .parent_mint_account
-        .to_account_info()
-        .key
-        .as_ref();
-
-    let (_, children_pda_bump) =
-        Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
-    if bump != children_pda_bump {
-        return err!(ErrorCode::InvalidMetadataBump);
-    }
 
     token::set_authority(
         ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI

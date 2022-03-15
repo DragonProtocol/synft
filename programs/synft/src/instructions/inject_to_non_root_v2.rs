@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, ErrorCode, CHILDREN_PDA_SEED};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
@@ -9,11 +9,24 @@ pub struct InjectToNonRootV2<'info> {
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
     pub current_owner: Signer<'info>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = child_token_account.amount == 1,
+        constraint = child_token_account.mint == child_mint_account.key(),
+        constraint = child_token_account.owner == current_owner.key(),
+    )]
     pub child_token_account: Box<Account<'info, TokenAccount>>,
     pub child_mint_account: Box<Account<'info, Mint>>,
+    #[account(
+        constraint = parent_token_account.amount == 1,
+        constraint = parent_token_account.mint == parent_mint_account.key(),
+    )]
     pub parent_token_account: Box<Account<'info, TokenAccount>>,
     pub parent_mint_account: Box<Account<'info, Mint>>,
+    #[account(
+        constraint = root_token_account.amount == 1,
+        constraint = root_token_account.mint == root_mint_account.key(),
+    )]
     pub root_token_account: Box<Account<'info, TokenAccount>>,
     pub root_mint_account: Box<Account<'info, Mint>>,
     #[account(
@@ -21,11 +34,6 @@ pub struct InjectToNonRootV2<'info> {
         payer = current_owner,
         // space: 8 discriminator + 1 is_mutable + 1 is_mutated + 1 is_parent_root + 1 is_burnt + 32 child pubkey + 32 parent pubkey + 32 root pubkey + 1 bump + 4 child type
         space = 8+1+1+1+1+32+32+32+1+4,
-        constraint = parent_token_account.amount == 1,
-        constraint = parent_token_account.mint == parent_mint_account.key(),
-        constraint = child_token_account.amount == 1,
-        constraint = child_token_account.mint == child_mint_account.key(),
-        constraint = child_token_account.owner == current_owner.key(),
         seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
@@ -35,7 +43,6 @@ pub struct InjectToNonRootV2<'info> {
     )]
     pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
-        constraint = parent_token_account.amount == 1,
         constraint = root_token_account.mint == root_mint_account.key(),
         constraint = root_token_account.owner == current_owner.key(),
         constraint = root_meta.root == root_meta.key(),
@@ -74,26 +81,6 @@ pub fn handler(
     ctx.accounts.children_meta.root = *ctx.accounts.root_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
     ctx.accounts.children_meta.is_mutated = is_mutated;
-    let parent_key = ctx
-        .accounts
-        .parent_mint_account
-        .to_account_info()
-        .key
-        .as_ref();
-    let child_key = ctx
-        .accounts
-        .child_mint_account
-        .to_account_info()
-        .key
-        .as_ref();
-
-    let (_, children_pda_bump) = Pubkey::find_program_address(
-        &[&CHILDREN_PDA_SEED[..], parent_key, child_key],
-        &(ctx.program_id),
-    );
-    if bump != children_pda_bump {
-        return err!(ErrorCode::InvalidMetadataBump);
-    }
 
     token::set_authority(
         ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
