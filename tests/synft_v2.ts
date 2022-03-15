@@ -475,7 +475,7 @@ describe("synft v2", () => {
       user1Account.lamports,
       Number(tokenAccount1Amount) - inject_sol_amount
     );
-
+    
     let solAccount = await anchor
       .getProvider()
       .connection.getAccountInfo(_sol_pda);

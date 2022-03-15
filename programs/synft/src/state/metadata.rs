@@ -43,7 +43,6 @@ pub struct ParentMetadata {
 
 #[account]
 pub struct SolAccount {
-    pub parent: Pubkey,
 }
 
 #[error_code]

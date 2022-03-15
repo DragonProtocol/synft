@@ -33,7 +33,6 @@ pub fn handler(
     bump: u8,
     inject_sol_amount: u64,
 ) -> Result<()> {
-    ctx.accounts.sol_account.parent = *ctx.accounts.current_owner.to_account_info().key;
 
     let parent_key = ctx
         .accounts
@@ -41,11 +40,11 @@ pub fn handler(
         .to_account_info()
         .key
         .as_ref();
-    let (_, children_pda_bump) = Pubkey::find_program_address(
+    let (_, pda_bump) = Pubkey::find_program_address(
         &[&SOL_PDA_SEED[..], parent_key],
         &(ctx.program_id),
     );
-    if bump != children_pda_bump {
+    if bump != pda_bump {
         return err!(ErrorCode::InvalidMetadataBump);
     }
 
