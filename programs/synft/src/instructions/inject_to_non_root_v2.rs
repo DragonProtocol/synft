@@ -31,14 +31,14 @@ pub struct InjectToNonRootV2<'info> {
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
         constraint = parent_meta.root != parent_mint_account.key(),
-        constraint = (parent_meta.root == root_meta.key() || parent_meta.root == root_mint_account.key()),
+        constraint = (parent_meta.root == root_meta.key()),
     )]
     pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
         constraint = parent_token_account.amount == 1,
         constraint = root_token_account.mint == root_mint_account.key(),
         constraint = root_token_account.owner == current_owner.key(),
-        constraint = root_meta.is_parent_root == true,
+        constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
         constraint = root_meta.is_mutated == false,
         constraint = root_meta.is_burnt == false,
@@ -73,7 +73,6 @@ pub fn handler(
     ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
     ctx.accounts.children_meta.root = *ctx.accounts.root_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
-    ctx.accounts.children_meta.is_parent_root = true;
     ctx.accounts.children_meta.is_mutated = is_mutated;
     let parent_key = ctx
         .accounts

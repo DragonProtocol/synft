@@ -429,4 +429,56 @@ describe("synft v2", () => {
     assert.ok(childrenMeta.child.toString() == mint5.toString());
   });
 
+  /**
+   * Test: transfer SOL from user 1 to NFT 1
+   * check the balance of user 1
+   */
+   it("Inject SOL", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
+        mint1.toBuffer(),
+      ],
+      program.programId
+    );
+
+    const inject_sol_amount = 500000000;
+
+    let user1Account = await anchor
+      .getProvider()
+      .connection.getAccountInfo(user1.publicKey);
+    const tokenAccount1Amount = user1Account.lamports;
+
+    let initTx = await program.rpc.injectToSolV2(
+      _sol_bump,
+      new anchor.BN(inject_sol_amount),
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          parentTokenAccount: tokenAccount1.address,
+          parentMintAccount : tokenAccount1.mint,
+          solAccount: _sol_pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [user1],
+      }
+    );
+
+    // volidate the balance of tokenAccount 1
+    user1Account = await anchor
+      .getProvider()
+      .connection.getAccountInfo(user1.publicKey);
+
+    assert.ok(
+      user1Account.lamports,
+      Number(tokenAccount1Amount) - inject_sol_amount
+    );
+
+    let solAccount = await anchor
+      .getProvider()
+      .connection.getAccountInfo(_sol_pda);
+    assert.ok(solAccount.lamports > inject_sol_amount);
+  });
 });

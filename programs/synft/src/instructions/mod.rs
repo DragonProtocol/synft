@@ -9,6 +9,7 @@ pub mod nft_copy;
 pub mod inject_to_root_v2;
 pub mod inject_to_non_root_v2;
 pub mod transfer_child_nft_v2;
+pub mod inject_sol_v2;
 
 pub use burn_for_sol::*;
 pub use burn_for_token::*;
@@ -21,3 +22,4 @@ pub use nft_copy::*;
 pub use inject_to_root_v2::*;
 pub use inject_to_non_root_v2::*;
 pub use transfer_child_nft_v2::*;
+pub use inject_sol_v2::*;

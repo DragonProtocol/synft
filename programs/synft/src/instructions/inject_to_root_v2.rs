@@ -50,10 +50,9 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, bump: u8) -> Resu
     ctx.accounts.children_meta.bump = bump;
     ctx.accounts.children_meta.child = *ctx.accounts.child_mint_account.to_account_info().key;
     ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
-    ctx.accounts.children_meta.root = *ctx.accounts.parent_mint_account.to_account_info().key;
+    ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
     ctx.accounts.children_meta.is_mutated = false;
-    ctx.accounts.children_meta.is_parent_root = true;
     let parent_key = ctx
         .accounts
         .parent_mint_account

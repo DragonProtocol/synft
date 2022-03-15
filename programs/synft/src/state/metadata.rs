@@ -4,6 +4,7 @@ pub const CHILDREN_PDA_SEED: &[u8] = b"children-of";
 pub const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
 pub const SYNTHETIC_NFT_MINT_SEED: &[u8] = b"synthetic-nft-mint-seed";
 pub const SYNTHETIC_NFT_ACOUNT_SEED: &[u8] = b"synthetic-nft-account-seed";
+pub const SOL_PDA_SEED: &[u8] = b"sol-seed";
 
 #[account]
 pub struct ChildrenMetadata {
@@ -21,7 +22,6 @@ pub struct ChildrenMetadataV2 {
     pub child: Pubkey,
     pub parent: Pubkey,
     pub root: Pubkey,
-    pub is_parent_root: bool,
     pub is_mutable: bool,
     pub is_mutated: bool,
     pub is_burnt: bool,
@@ -38,6 +38,11 @@ pub enum ChildType {
 
 #[account]
 pub struct ParentMetadata {
+    pub parent: Pubkey,
+}
+
+#[account]
+pub struct SolAccount {
     pub parent: Pubkey,
 }
 

@@ -78,14 +78,12 @@ pub mod synft {
     ) -> Result<()> {
         instructions::inject_to_non_root_v2::handler(ctx, is_mutable, is_mutated, bump)
     }
+
+    pub fn inject_to_sol_v2(
+        ctx: Context<InjectSolV2>,
+        bump: u8,
+        inject_sol_amount: u64,
+    ) -> Result<()> {
+        instructions::inject_sol_v2::handler(ctx, bump, inject_sol_amount)
+    }
 }
-
-
-
-
-
-
-
-
-
-
