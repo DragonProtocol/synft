@@ -33,7 +33,7 @@ pub fn handler(
     bump: u8,
     inject_sol_amount: u64,
 ) -> Result<()> {
-    ctx.accounts.sol_account.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
+    ctx.accounts.sol_account.parent = *ctx.accounts.current_owner.to_account_info().key;
 
     let parent_key = ctx
         .accounts
@@ -53,7 +53,7 @@ pub fn handler(
         &system_instruction::transfer(
             ctx.accounts.current_owner.key,
             ctx.accounts.sol_account.to_account_info().key,
-            inject_sol_amount, // 0.1 SOL
+            inject_sol_amount,
         ),
         &[
             ctx.accounts.current_owner.to_account_info(),
