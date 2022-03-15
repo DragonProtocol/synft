@@ -62,21 +62,21 @@ pub mod synft {
         instructions::burn_for_token::handler(ctx)
     }
 
-    pub fn inject_to_root(
-        ctx: Context<InjectToRoot>,
+    pub fn inject_to_root_v2(
+        ctx: Context<InjectToRootV2>,
         is_mutable: bool,
         bump: u8,
     ) -> Result<()> {
-        instructions::inject_to_root::handler(ctx, is_mutable, bump)
+        instructions::inject_to_root_v2::handler(ctx, is_mutable, bump)
     }
 
-    pub fn inject_to_non_root(
-        ctx: Context<InjectToNonRoot>,
+    pub fn inject_to_non_root_v2(
+        ctx: Context<InjectToNonRootV2>,
         is_mutable: bool,
         is_mutated: bool,
         bump: u8,
     ) -> Result<()> {
-        instructions::inject_to_non_root::handler(ctx, is_mutable, is_mutated, bump)
+        instructions::inject_to_non_root_v2::handler(ctx, is_mutable, is_mutated, bump)
     }
 }
 

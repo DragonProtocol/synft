@@ -4,18 +4,16 @@ use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
 
 #[derive(Accounts)]
-pub struct InjectToNonRoot<'info> {
+pub struct InjectToRootV2<'info> {
     // Do this instruction when the parent do NOT has any metadata associated
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(mut)]
-    pub child_token_account: Box<Account<'info, TokenAccount>>,
-    pub child_mint_account: Box<Account<'info, Mint>>,
-    pub parent_token_account: Box<Account<'info, TokenAccount>>,
-    pub parent_mint_account: Box<Account<'info, Mint>>,
-    pub root_token_account: Box<Account<'info, TokenAccount>>,
-    pub root_mint_account: Box<Account<'info, Mint>>,
+    pub child_token_account: Account<'info, TokenAccount>,
+    pub child_mint_account: Account<'info, Mint>,
+    pub parent_token_account: Account<'info, TokenAccount>,
+    pub parent_mint_account: Account<'info, Mint>,
     #[account(
         init,
         payer = current_owner,
@@ -23,34 +21,20 @@ pub struct InjectToNonRoot<'info> {
         space = 8+1+1+1+1+32+32+32+1+4,
         constraint = parent_token_account.amount == 1,
         constraint = parent_token_account.mint == parent_mint_account.key(),
+        constraint = parent_token_account.owner == current_owner.key(),
         constraint = child_token_account.amount == 1,
         constraint = child_token_account.mint == child_mint_account.key(),
         constraint = child_token_account.owner == current_owner.key(),
         seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
-    #[account(
-        constraint = parent_meta.root != parent_mint_account.key(),
-        constraint = (parent_meta.root == root_meta.key() || parent_meta.root == root_mint_account.key()),
-    )]
-    pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
-    #[account(
-        constraint = parent_token_account.amount == 1,
-        constraint = root_token_account.mint == root_mint_account.key(),
-        constraint = root_token_account.owner == current_owner.key(),
-        constraint = root_meta.is_parent_root == true,
-        constraint = root_meta.is_mutable == true,
-        constraint = root_meta.is_mutated == false,
-        constraint = root_meta.is_burnt == false,
-    )]
-    pub root_meta: Box<Account<'info, ChildrenMetadataV2>>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> InjectToNonRoot<'info> {
+impl<'info> InjectToRootV2<'info> {
     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
         let cpi_accounts = SetAuthority {
             account_or_mint: self.child_token_account.to_account_info(),
@@ -61,20 +45,15 @@ impl<'info> InjectToNonRoot<'info> {
     }
 }
 
-pub fn handler(
-    ctx: Context<InjectToNonRoot>,
-    is_mutable: bool,
-    is_mutated: bool,
-    bump: u8,
-) -> Result<()> {
+pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, bump: u8) -> Result<()> {
     ctx.accounts.children_meta.is_mutable = is_mutable;
     ctx.accounts.children_meta.bump = bump;
     ctx.accounts.children_meta.child = *ctx.accounts.child_mint_account.to_account_info().key;
     ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
-    ctx.accounts.children_meta.root = *ctx.accounts.root_meta.to_account_info().key;
+    ctx.accounts.children_meta.root = *ctx.accounts.parent_mint_account.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
+    ctx.accounts.children_meta.is_mutated = false;
     ctx.accounts.children_meta.is_parent_root = true;
-    ctx.accounts.children_meta.is_mutated = is_mutated;
     let parent_key = ctx
         .accounts
         .parent_mint_account
@@ -87,11 +66,8 @@ pub fn handler(
         .to_account_info()
         .key
         .as_ref();
-
-    let (_, children_pda_bump) = Pubkey::find_program_address(
-        &[&CHILDREN_PDA_SEED[..], parent_key, child_key],
-        &(ctx.program_id),
-    );
+    let (_, children_pda_bump) =
+        Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key, child_key], &(ctx.program_id));
     if bump != children_pda_bump {
         return err!(ErrorCode::InvalidMetadataBump);
     }

@@ -286,7 +286,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx = await program.rpc.injectToRoot(
+    let initTx = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_1,
       {
@@ -322,7 +322,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx1 = await program.rpc.injectToRoot(
+    let initTx1 = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_0,
       {
@@ -366,7 +366,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx1 = await program.rpc.injectToRoot(
+    let initTx1 = await program.rpc.injectToRootV2(
       true,
       _root_metadata_bump,
       {
@@ -394,10 +394,10 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx2 = await program.rpc.injectToNonRoot(
+    let initTx2 = await program.rpc.injectToNonRootV2(
       // `is_mutable` 
       true,
-      // `is_mutated` 
+      // `is_mutated` set false now
       false,
       _child_metadata_bump,
       {
