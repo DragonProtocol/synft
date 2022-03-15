@@ -57,7 +57,7 @@ async function getNFTMetadata(
       externalMetadata,
     };
   } catch (e) {
-    console.log(`failed to pull metadata for token ${mint}`);
+    console.log(`Need VPN!!! failed to pull metadata for token ${mint}`);
   }
 }
 

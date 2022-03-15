@@ -5,7 +5,7 @@ use anchor_spl::token::{
     self, Mint, Token, TokenAccount, Transfer
 };
 use crate::state::metadata::{
-    ChildType, CHILDREN_PDA_SEED, ChildrenMetadata, ErrorCode
+    ChildType, CHILDREN_PDA_SEED, ChildrenMetadata
 };
 
 
@@ -67,18 +67,6 @@ pub fn handler(
     ctx.accounts.children_meta.child =
         *ctx.accounts.fungible_token_account.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::SPL;
-
-    let parent_key = ctx
-        .accounts
-        .parent_mint_account
-        .to_account_info()
-        .key
-        .as_ref();
-    let (_, children_pda_bump) =
-        Pubkey::find_program_address(&[&CHILDREN_PDA_SEED[..], parent_key], &(ctx.program_id));
-    if bump != children_pda_bump {
-        return err!(ErrorCode::InvalidMetadataBump);
-    }
 
     token::transfer(
         ctx.accounts.into_transfer_to_pda_context(),
