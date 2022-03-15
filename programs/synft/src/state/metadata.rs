@@ -15,6 +15,20 @@ pub struct ChildrenMetadata {
     pub bump: u8,
 }
 
+#[account]
+pub struct ChildrenMetadataV2 {
+    // parent, root, mint refer to "mint"
+    pub child: Pubkey,
+    pub parent: Pubkey,
+    pub root: Pubkey,
+    pub is_parent_root: bool,
+    pub is_mutable: bool,
+    pub is_mutated: bool,
+    pub is_burnt: bool,
+    pub child_type: ChildType,
+    pub bump: u8,
+}
+
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, PartialEq)]
 pub enum ChildType {
     SOL,

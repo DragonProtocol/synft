@@ -61,6 +61,23 @@ pub mod synft {
     pub fn burn_for_token(ctx: Context<BurnForToken>) -> Result<()> {
         instructions::burn_for_token::handler(ctx)
     }
+
+    pub fn inject_to_root(
+        ctx: Context<InjectToRoot>,
+        is_mutable: bool,
+        bump: u8,
+    ) -> Result<()> {
+        instructions::inject_to_root::handler(ctx, is_mutable, bump)
+    }
+
+    pub fn inject_to_non_root(
+        ctx: Context<InjectToNonRoot>,
+        is_mutable: bool,
+        is_mutated: bool,
+        bump: u8,
+    ) -> Result<()> {
+        instructions::inject_to_non_root::handler(ctx, is_mutable, is_mutated, bump)
+    }
 }
 
 

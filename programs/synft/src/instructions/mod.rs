@@ -6,6 +6,9 @@ pub mod initialize_inject;
 pub mod initialize_fungible_token_inject;
 pub mod initialize_sol_inject;
 pub mod nft_copy;
+pub mod inject_to_root;
+pub mod inject_to_non_root;
+pub mod transfer_child_nft;
 
 pub use burn_for_sol::*;
 pub use burn_for_token::*;
@@ -15,3 +18,6 @@ pub use initialize_inject::*;
 pub use initialize_fungible_token_inject::*;
 pub use initialize_sol_inject::*;
 pub use nft_copy::*;
+pub use inject_to_root::*;
+pub use inject_to_non_root::*;
+pub use transfer_child_nft::*;
