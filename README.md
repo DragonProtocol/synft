@@ -17,7 +17,8 @@ You can interact with them using this [enchanft.xyz](https://enchanft.xyz/)
 
 # Docs ✏️
 
-TODO
+![Architecture](docs/architecture.jpg)
+
 
 # License 🧾
 
