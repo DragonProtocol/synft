@@ -26,6 +26,7 @@ pub struct InjectToNonRootV2<'info> {
     #[account(
         constraint = root_token_account.amount == 1,
         constraint = root_token_account.mint == root_mint_account.key(),
+        constraint = root_token_account.owner == current_owner.key(),
     )]
     pub root_token_account: Box<Account<'info, TokenAccount>>,
     pub root_mint_account: Box<Account<'info, Mint>>,
@@ -43,8 +44,6 @@ pub struct InjectToNonRootV2<'info> {
     )]
     pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
-        constraint = root_token_account.mint == root_mint_account.key(),
-        constraint = root_token_account.owner == current_owner.key(),
         constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
         constraint = root_meta.is_mutated == false,

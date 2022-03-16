@@ -77,6 +77,7 @@ describe("synft v2", () => {
    * - NFT 5 owned by user 1
    */
   const user1 = anchor.web3.Keypair.generate();
+  const user2 = anchor.web3.Keypair.generate();
   const mintAuthority = anchor.web3.Keypair.generate();
   const payer = anchor.web3.Keypair.generate();
   let mint0 = null as PublicKey;
@@ -108,6 +109,14 @@ describe("synft v2", () => {
         await anchor
           .getProvider()
           .connection.requestAirdrop(user1.publicKey, 5000000000),
+        "processed"
+      );
+    await anchor
+      .getProvider()
+      .connection.confirmTransaction(
+        await anchor
+          .getProvider()
+          .connection.requestAirdrop(user2.publicKey, 5000000000),
         "processed"
       );
     await anchor
@@ -312,7 +321,7 @@ describe("synft v2", () => {
     assert.ok(childrenMeta.isMutable == true);
     assert.ok(childrenMeta.bump == _metadata_bump_2_1);
     assert.ok(childrenMeta.child.toString() == mint1.toString());
-    
+
     // inject nft0 to  nft2
     const [_metadata_pda_2_0, _metadata_bump_2_0] = await PublicKey.findProgramAddress(
       [
@@ -429,11 +438,71 @@ describe("synft v2", () => {
     assert.ok(childrenMeta.child.toString() == mint5.toString());
   });
 
+  // Transfer NFT, transfer out nft5 to user2
+  // user1        user2           
+  //  |             |     
+  // nft3         nft5    
+  //  |            
+  // nft4  >>>>     
+  //  |
+  // nft5
+  it("Transfer NFT to user", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        mint3.toBuffer(),
+        mint4.toBuffer(),
+      ],
+      program.programId
+    );
+    const [_parent_meta_pda, _parent_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        mint4.toBuffer(),
+        mint5.toBuffer(),
+      ],
+      program.programId
+    );
+
+    let initTx = await program.rpc.transferChildNftV2(_parent_metadata_bump,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          childTokenAccount: tokenAccount5.address,
+          childMintAccount: mint5,
+          rootTokenAccount: tokenAccount3.address,
+          rootMintAccount: mint3,
+          parentMeta: _parent_meta_pda,
+          parentMintAccount: mint4,
+          rootMeta: _root_metadata_pda,
+          userAccount: user2.publicKey,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      }
+    );
+
+    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(
+      _root_metadata_pda
+    );
+    assert.isOk(rootMeta.isMutated == true);
+
+    // volidate that parentMeta is deleted.
+    let parentMeta = await program.account.childrenMetadataV2.fetchNullable(
+      _parent_meta_pda
+    );
+    assert.isNull(parentMeta);
+  });
+
   /**
    * Test: transfer SOL from user 1 to NFT 1
    * check the balance of user 1
    */
-   it("Inject SOL", async () => {
+  it("Inject SOL", async () => {
     let connection = anchor.getProvider().connection;
     const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
       [
@@ -457,7 +526,7 @@ describe("synft v2", () => {
         accounts: {
           currentOwner: user1.publicKey,
           parentTokenAccount: tokenAccount1.address,
-          parentMintAccount : tokenAccount1.mint,
+          parentMintAccount: tokenAccount1.mint,
           solAccount: _sol_pda,
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -475,7 +544,7 @@ describe("synft v2", () => {
       user1Account.lamports,
       Number(tokenAccount1Amount) - inject_sol_amount
     );
-    
+
     let solAccount = await anchor
       .getProvider()
       .connection.getAccountInfo(_sol_pda);
