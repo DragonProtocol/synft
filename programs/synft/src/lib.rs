@@ -86,4 +86,8 @@ pub mod synft {
     ) -> Result<()> {
         instructions::inject_sol_v2::handler(ctx, bump, inject_sol_amount)
     }
+
+    pub fn transfer_child_nft_v2(ctx: Context<TransferChildNftV2>, _bump: u8) -> Result<()> {
+        instructions::transfer_child_nft_v2::handler(ctx, _bump)
+    }
 }

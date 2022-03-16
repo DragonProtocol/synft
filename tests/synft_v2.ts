@@ -438,86 +438,65 @@ describe("synft v2", () => {
     assert.ok(childrenMeta.child.toString() == mint5.toString());
   });
 
-  // Inject nft4 to nft3,  inject nft5 to  nft4,  trander nft4 to user2
-  // user1        user2
-  //  |             |
-  // nft3         nft4
-  //  |             |
-  // nft4  >>>>   nft5
+  // Transfer NFT, transfer out nft5 to user2
+  // user1        user2           
+  //  |             |     
+  // nft3         nft5    
+  //  |            
+  // nft4  >>>>     
   //  |
   // nft5
-  // it("Inject to non-root NFT", async () => {
-  //   let connection = anchor.getProvider().connection;
-  //   const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
-  //     [
-  //       Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-  //       mint3.toBuffer(),
-  //       mint4.toBuffer(),
-  //     ],
-  //     program.programId
-  //   );
-  //   let initTx1 = await program.rpc.injectToRootV2(
-  //     true,
-  //     _root_metadata_bump,
-  //     {
-  //       accounts: {
-  //         currentOwner: user1.publicKey,
-  //         childTokenAccount: tokenAccount4.address,
-  //         childMintAccount: mint4,
-  //         parentTokenAccount: tokenAccount3.address,
-  //         parentMintAccount: mint3,
-  //         childrenMeta: _root_metadata_pda,
+  it("Transfer NFT to user", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        mint3.toBuffer(),
+        mint4.toBuffer(),
+      ],
+      program.programId
+    );
+    const [_parent_meta_pda, _parent_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        mint4.toBuffer(),
+        mint5.toBuffer(),
+      ],
+      program.programId
+    );
 
-  //         systemProgram: anchor.web3.SystemProgram.programId,
-  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-  //         tokenProgram: TOKEN_PROGRAM_ID,
-  //       },
-  //       signers: [user1],
-  //     }
-  //   );
+    let initTx = await program.rpc.transferChildNftV2(_parent_metadata_bump,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          childTokenAccount: tokenAccount5.address,
+          childMintAccount: mint5,
+          rootTokenAccount: tokenAccount3.address,
+          rootMintAccount: mint3,
+          parentMeta: _parent_meta_pda,
+          parentMintAccount: mint4,
+          rootMeta: _root_metadata_pda,
+          userAccount: user2.publicKey,
 
-  //   const [_child_metadata_pda, _child_metadata_bump] = await PublicKey.findProgramAddress(
-  //     [
-  //       Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-  //       mint4.toBuffer(),
-  //       mint5.toBuffer(),
-  //     ],
-  //     program.programId
-  //   );
-  //   let initTx2 = await program.rpc.injectToNonRootV2(
-  //     // `is_mutable` 
-  //     true,
-  //     // `is_mutated` set false now
-  //     false,
-  //     _child_metadata_bump,
-  //     {
-  //       accounts: {
-  //         currentOwner: user1.publicKey,
-  //         childTokenAccount: tokenAccount5.address,
-  //         childMintAccount: mint5,
-  //         parentTokenAccount: tokenAccount4.address,
-  //         parentMintAccount: mint4,
-  //         rootTokenAccount: tokenAccount3.address,
-  //         rootMintAccount: mint3,
-  //         childrenMeta: _child_metadata_pda,
-  //         parentMeta: _root_metadata_pda,
-  //         rootMeta: _root_metadata_pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      }
+    );
 
-  //         systemProgram: anchor.web3.SystemProgram.programId,
-  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-  //         tokenProgram: TOKEN_PROGRAM_ID,
-  //       },
-  //       signers: [user1],
-  //     }
-  //   );
-  //   // volidate metadata
-  //   let childrenMeta = await program.account.childrenMetadataV2.fetch(
-  //     _child_metadata_pda
-  //   );
-  //   assert.ok(childrenMeta.isMutable == true);
-  //   assert.ok(childrenMeta.bump == _child_metadata_bump);
-  //   assert.ok(childrenMeta.child.toString() == mint5.toString());
-  // });
+    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(
+      _root_metadata_pda
+    );
+    assert.isOk(rootMeta.isMutated == true);
+
+    // volidate that parentMeta is deleted.
+    let parentMeta = await program.account.childrenMetadataV2.fetchNullable(
+      _parent_meta_pda
+    );
+    assert.isNull(parentMeta);
+  });
 
   /**
    * Test: transfer SOL from user 1 to NFT 1

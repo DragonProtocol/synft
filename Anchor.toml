@@ -7,7 +7,7 @@ synft = "nftbxaFtUMxSip8eMTKCPbX9HvjKQmcREG6NyQ23auD"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

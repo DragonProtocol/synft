@@ -1,7 +1,8 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED};
+use crate::state::metadata::{CHILDREN_PDA_SEED, ChildType, ChildrenMetadataV2};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
+use anchor_lang::AccountsClose;
 
 #[derive(Accounts)]
 pub struct TransferChildNftV2<'info> {
@@ -13,7 +14,6 @@ pub struct TransferChildNftV2<'info> {
         mut,
         constraint = child_token_account.amount == 1,
         constraint = child_token_account.mint == child_mint_account.key(),
-        constraint = child_token_account.owner == current_owner.key(),
     )]
     pub child_token_account: Box<Account<'info, TokenAccount>>,
     pub child_mint_account: Box<Account<'info, Mint>>,
@@ -25,22 +25,26 @@ pub struct TransferChildNftV2<'info> {
     )]
     pub root_token_account: Box<Account<'info, TokenAccount>>,
     pub root_mint_account: Box<Account<'info, Mint>>,
+    pub parent_mint_account: Box<Account<'info, Mint>>,
     #[account(
-        init,
-        payer = current_owner,
-        // space: 8 discriminator + 1 is_mutable + 1 is_mutated + 1 is_parent_root + 1 is_burnt + 32 child pubkey + 32 parent pubkey + 32 root pubkey + 1 bump + 4 child type
-        space = 8+1+1+1+1+32+32+32+1+4,
-        seeds = [CHILDREN_PDA_SEED, root_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump
+        mut,
+        constraint = parent_meta.child_type == ChildType::NFT,
+        constraint = parent_meta.child == child_mint_account.key(),
+        constraint = parent_meta.root == root_meta.key(),
+
     )]
-    pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
+        mut,
+        constraint = root_meta.parent == root_mint_account.key(),
         constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
         constraint = root_meta.is_mutated == false,
         constraint = root_meta.is_burnt == false,
     )]
     pub root_meta: Box<Account<'info, ChildrenMetadataV2>>,
-    // pub user_account: Box<AccountInfo<'info>>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub user_account: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -51,26 +55,41 @@ impl<'info> TransferChildNftV2<'info> {
     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
         let cpi_accounts = SetAuthority {
             account_or_mint: self.child_token_account.to_account_info(),
-            current_authority: self.current_owner.to_account_info(),
+            current_authority: self.parent_meta.to_account_info(),
         };
 
         CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
     }
 }
 
-pub fn handler(ctx: Context<TransferChildNftV2>, is_mutable: bool, bump: u8) -> Result<()> {
-    ctx.accounts.children_meta.is_mutable = is_mutable;
-    ctx.accounts.children_meta.bump = bump;
-    ctx.accounts.children_meta.child = *ctx.accounts.child_mint_account.to_account_info().key;
-    ctx.accounts.children_meta.parent = *ctx.accounts.root_mint_account.to_account_info().key;
-    ctx.accounts.children_meta.root = *ctx.accounts.root_mint_account.to_account_info().key;
-    ctx.accounts.children_meta.child_type = ChildType::NFT;
-    ctx.accounts.children_meta.is_mutated = true;
+pub fn handler(ctx: Context<TransferChildNftV2>, _bump: u8) -> Result<()> {
+    ctx.accounts.root_meta.is_mutated = true;
+    let seeds = &[
+        &CHILDREN_PDA_SEED[..],
+        ctx.accounts
+            .parent_mint_account
+            .to_account_info()
+            .key
+            .as_ref(),
+        ctx.accounts
+            .child_mint_account
+            .to_account_info()
+            .key
+            .as_ref(),    
+        &[_bump],
+    ];
 
     token::set_authority(
-        ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
+        ctx.accounts.into_set_authority_context()
+        .with_signer(&[&seeds[..]]), // use PDA as signer
         AuthorityType::AccountOwner,
-        Some(*ctx.accounts.children_meta.to_account_info().key),
+        Some(*ctx.accounts.user_account.key),
     )?;
+
+    // Delete parent meta data pda account when it is not root meta data. 
+    if ctx.accounts.parent_meta.key() != ctx.accounts.root_meta.key() {
+        ctx.accounts.parent_meta.close(ctx.accounts.current_owner.to_account_info())?
+    }
+
     Ok(())
 }
