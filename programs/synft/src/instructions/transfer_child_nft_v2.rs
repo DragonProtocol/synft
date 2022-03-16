@@ -1,8 +1,8 @@
-use crate::state::metadata::{CHILDREN_PDA_SEED, ChildType, ChildrenMetadataV2};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED};
 use anchor_lang::prelude::*;
+use anchor_lang::AccountsClose;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
-use anchor_lang::AccountsClose;
 
 #[derive(Accounts)]
 pub struct TransferChildNftV2<'info> {
@@ -10,30 +10,13 @@ pub struct TransferChildNftV2<'info> {
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
     pub current_owner: Signer<'info>,
-    #[account(
-        mut,
-        constraint = child_token_account.amount == 1,
-        constraint = child_token_account.mint == child_mint_account.key(),
-    )]
-    pub child_token_account: Box<Account<'info, TokenAccount>>,
-    pub child_mint_account: Box<Account<'info, Mint>>,
-
+    pub root_mint_account: Box<Account<'info, Mint>>,
     #[account(
         constraint = root_token_account.amount == 1,
         constraint = root_token_account.mint == root_mint_account.key(),
         constraint = root_token_account.owner == current_owner.key(),
     )]
     pub root_token_account: Box<Account<'info, TokenAccount>>,
-    pub root_mint_account: Box<Account<'info, Mint>>,
-    pub parent_mint_account: Box<Account<'info, Mint>>,
-    #[account(
-        mut,
-        constraint = parent_meta.child_type == ChildType::NFT,
-        constraint = parent_meta.child == child_mint_account.key(),
-        constraint = parent_meta.root == root_meta.key(),
-
-    )]
-    pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
         mut,
         constraint = root_meta.parent == root_mint_account.key(),
@@ -43,8 +26,25 @@ pub struct TransferChildNftV2<'info> {
         constraint = root_meta.is_burnt == false,
     )]
     pub root_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub parent_mint_account: Box<Account<'info, Mint>>,
+    #[account(
+        mut,
+        constraint = parent_meta.child_type == ChildType::NFT,
+        constraint = parent_meta.parent == parent_mint_account.key(),
+        constraint = parent_meta.child == child_mint_account.key(),
+        constraint = parent_meta.root == root_meta.key(),
+
+    )]
+    pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub child_mint_account: Box<Account<'info, Mint>>,
+    #[account(
+        mut,
+        constraint = child_token_account.amount == 1,
+        constraint = child_token_account.mint == child_mint_account.key(),
+    )]
+    pub child_token_account: Box<Account<'info, TokenAccount>>,
     /// CHECK: This is not dangerous because we don't read or write from this account
-    pub user_account: AccountInfo<'info>,
+    pub receiver_account: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -75,20 +75,23 @@ pub fn handler(ctx: Context<TransferChildNftV2>, _bump: u8) -> Result<()> {
             .child_mint_account
             .to_account_info()
             .key
-            .as_ref(),    
+            .as_ref(),
         &[_bump],
     ];
 
     token::set_authority(
-        ctx.accounts.into_set_authority_context()
-        .with_signer(&[&seeds[..]]), // use PDA as signer
+        ctx.accounts
+            .into_set_authority_context()
+            .with_signer(&[&seeds[..]]), // use PDA as signer
         AuthorityType::AccountOwner,
-        Some(*ctx.accounts.user_account.key),
+        Some(*ctx.accounts.receiver_account.key),
     )?;
 
-    // Delete parent meta data pda account when it is not root meta data. 
+    // Delete parent meta data pda account when it is not root meta data.
     if ctx.accounts.parent_meta.key() != ctx.accounts.root_meta.key() {
-        ctx.accounts.parent_meta.close(ctx.accounts.current_owner.to_account_info())?
+        ctx.accounts
+            .parent_meta
+            .close(ctx.accounts.current_owner.to_account_info())?
     }
 
     Ok(())

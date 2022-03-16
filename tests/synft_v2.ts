@@ -476,7 +476,7 @@ describe("synft v2", () => {
           parentMeta: _parent_meta_pda,
           parentMintAccount: mint4,
           rootMeta: _root_metadata_pda,
-          userAccount: user2.publicKey,
+          receiverAccount: user2.publicKey,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
