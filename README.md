@@ -15,7 +15,6 @@ It consists of some features:
 ```
 nftbxaFtUMxSip8eMTKCPbX9HvjKQmcREG6NyQ23auD
 ```
-
 You can interact with them using this [enchanft.xyz](https://enchanft.xyz/)
 
 # Docs ✏️
