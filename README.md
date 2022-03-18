@@ -9,7 +9,7 @@ It consists of some features:
 - [x] Extract SOl 💲 - you can extract SOl that it is in your NFT out to your wallet.
 - [x] Tranfer out ➡️ - you can transfer out any NFTs that you owned to anyone.
 - [x] Burn 🔥  - responsible for burning your NFT, transfer sol into your account.
-- [ ] Crunk 🔧 - responsible for refresh your NFT tree to be correct status.
+- [ ] Crunk 🔧 - responsible for refreshong your NFT tree to be correct status.
 # Official deployment 🚀
 
 ```
