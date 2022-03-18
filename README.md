@@ -9,7 +9,17 @@ It consists of some features:
 - [x] Extract SOl 💲 - you can extract SOl that it is in your NFT out to your wallet.
 - [x] Tranfer out ➡️ - you can transfer out any NFTs that you owned to anyone.
 - [x] Burn 🔥  - responsible for burning your NFT, transfer sol into your account.
-- [ ] Crunk 🔧 - responsible for refreshong your NFT tree to be correct status.
+- [ ] Crank 🔧 - responsible for refreshing your NFT tree to be correct status.
+
+# Deploy your own version 🛠
+
+- `git clone` the repo 
+- Make sure you have `solana-cli` installed, keypair configured, and at least 10 sol on devnet beforehand
+- Update path to your keypair in `Anchor.toml` that begins with `wallet =`
+- Run `anchor build` to build the programs
+- Run `anchor test` to test the programs
+- Run `anchor deploy --provider.cluster devnet` to deploy to devnet
+
 # Official deployment 🚀
 
 ```
