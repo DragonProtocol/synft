@@ -37,8 +37,19 @@ pub enum ChildType {
 }
 
 #[account]
+#[derive(Default)]
+pub struct CrunkMetadata {
+    pub tranfered_nft: Pubkey, // nft mint account
+    pub old_root_meta_data: Pubkey, // old root meta data
+    pub new_root_meta_data: Pubkey, 
+    pub new_owner: Pubkey,
+    pub not_updated_children: [Pubkey; 32],
+}
+
+#[account]
 pub struct ParentMetadata {
     pub parent: Pubkey,
+    pub immediate_children: [Pubkey; 32],
 }
 
 #[account]
