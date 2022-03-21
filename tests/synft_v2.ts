@@ -86,12 +86,15 @@ describe("synft v2", () => {
   let mint3 = null as PublicKey;
   let mint4 = null as PublicKey;
   let mint5 = null as PublicKey;
+  let mint6 = null as PublicKey;
   let tokenAccount0 = null as Account;
   let tokenAccount1 = null as Account;
   let tokenAccount2 = null as Account;
   let tokenAccount3 = null as Account;
   let tokenAccount4 = null as Account;
   let tokenAccount5 = null as Account;
+  let tokenAccount6 = null as Account;
+
 
   it("Is initialized!", async () => {
     let connection = anchor.getProvider().connection;
@@ -175,6 +178,13 @@ describe("synft v2", () => {
       mintAuthority.publicKey,
       0
     );
+    mint6 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
     tokenAccount0 = await getOrCreateAssociatedTokenAccount(
       connection,
       payer,
@@ -217,12 +227,21 @@ describe("synft v2", () => {
       user1.publicKey,
       true
     );
+    tokenAccount6 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint6,
+      user2.publicKey,
+      true
+    );
     assert.ok(tokenAccount0.owner.toString() == user1.publicKey.toString());
     assert.ok(tokenAccount1.owner.toString() == user1.publicKey.toString());
     assert.ok(tokenAccount2.owner.toString() == user1.publicKey.toString());
     assert.ok(tokenAccount3.owner.toString() == user1.publicKey.toString());
     assert.ok(tokenAccount4.owner.toString() == user1.publicKey.toString());
     assert.ok(tokenAccount5.owner.toString() == user1.publicKey.toString());
+    assert.ok(tokenAccount6.owner.toString() == user2.publicKey.toString());
+
     let signature0 = await mintTo(
       connection,
       payer,
@@ -273,6 +292,15 @@ describe("synft v2", () => {
       payer,
       mint5,
       tokenAccount5.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature6 = await mintTo(
+      connection,
+      payer,
+      mint6,
+      tokenAccount6.address,
       mintAuthority,
       1,
       []
@@ -595,5 +623,72 @@ describe("synft v2", () => {
 
     let solAccount = await program.account.solAccount.fetchNullable(_sol_pda);
     assert.isNull(solAccount);
+  });
+  // Extract NFT, extract nft5 to user2
+  // user2          user2           
+  //  |             /   \   
+  // nft5        nft5  nft6 
+  //  |            
+  // nft6  
+  it("Extract NFT to user", async () => {
+    let connection = anchor.getProvider().connection;
+    // inject nft6 to nft5
+    const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        mint5.toBuffer(),
+        mint6.toBuffer(),
+      ],
+      program.programId
+    );
+    let initTx1 = await program.rpc.injectToRootV2(
+      true,
+      _root_metadata_bump,
+      {
+        accounts: {
+          currentOwner: user2.publicKey,
+          childTokenAccount: tokenAccount6.address,
+          childMintAccount: mint6,
+          parentTokenAccount: tokenAccount5.address,
+          parentMintAccount: mint5,
+          childrenMeta: _root_metadata_pda,
+          // parentMeta: _parent_metadata_pda_nft0,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user2],
+      }
+    );
+
+    let initTx = await program.rpc.extractV2(_root_metadata_bump,
+      {
+        accounts: {
+          currentOwner: user2.publicKey,
+          childTokenAccount: tokenAccount6.address,
+          childMintAccount: mint6,
+          rootTokenAccount: tokenAccount5.address,
+          rootMintAccount: mint5,
+          parentMeta: _root_metadata_pda,
+          parentMintAccount: mint5,
+          rootMeta: _root_metadata_pda,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user2],
+      }
+    );
+
+    const nftTokenAccount  = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint6,
+      user2.publicKey,
+      true
+    );    
+    assert.ok(nftTokenAccount.owner.toString() == user2.publicKey);
   });
 });

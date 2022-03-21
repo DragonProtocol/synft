@@ -6,7 +6,6 @@ use instructions::*;
 
 declare_id!("nftbxaFtUMxSip8eMTKCPbX9HvjKQmcREG6NyQ23auD");
 
-
 #[program]
 pub mod synft {
     use super::*;
@@ -25,8 +24,12 @@ pub mod synft {
         bump: u8,
         inject_fungible_token_amount: u64,
     ) -> Result<()> {
-        instructions::initialize_fungible_token_inject::handler(ctx, reversible, 
-            bump, inject_fungible_token_amount)
+        instructions::initialize_fungible_token_inject::handler(
+            ctx,
+            reversible,
+            bump,
+            inject_fungible_token_amount,
+        )
     }
 
     pub fn initialize_sol_inject(
@@ -35,7 +38,7 @@ pub mod synft {
         bump: u8,
         inject_sol_amount: u64,
     ) -> Result<()> {
-       instructions::initialize_sol_inject::handler(ctx, reversible, bump, inject_sol_amount)
+        instructions::initialize_sol_inject::handler(ctx, reversible, bump, inject_sol_amount)
     }
 
     pub fn extract(ctx: Context<Extract>, _bump: u8) -> Result<()> {
@@ -43,7 +46,7 @@ pub mod synft {
     }
 
     pub fn extract_sol(ctx: Context<ExtractSol>, _bump: u8) -> Result<()> {
-       instructions::extract_sol::handler(ctx, _bump)
+        instructions::extract_sol::handler(ctx, _bump)
     }
 
     pub fn nft_copy(
@@ -52,10 +55,10 @@ pub mod synft {
         symbol: String,
         uri: String,
     ) -> Result<()> {
-       instructions::nft_copy::handler(ctx, name, symbol, uri)
+        instructions::nft_copy::handler(ctx, name, symbol, uri)
     }
     pub fn burn_for_sol(ctx: Context<BurnForSol>) -> Result<()> {
-      instructions::burn_for_sol::handler(ctx)
+        instructions::burn_for_sol::handler(ctx)
     }
 
     pub fn burn_for_token(ctx: Context<BurnForToken>) -> Result<()> {
@@ -92,5 +95,9 @@ pub mod synft {
 
     pub fn extract_sol_v2(ctx: Context<ExtractSolV2>, _bump: u8) -> Result<()> {
         instructions::extract_sol_v2::handler(ctx, _bump)
-     } 
+    }
+
+    pub fn extract_v2(ctx: Context<ExtractV2>, _bump: u8) -> Result<()> {
+        instructions::extract_v2::handler(ctx, _bump)
+    }
 }
