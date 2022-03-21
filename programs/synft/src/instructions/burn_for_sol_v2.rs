@@ -3,10 +3,11 @@ use anchor_spl::token::{
     self, Mint, Token, TokenAccount, Burn
 };
 use crate::state::metadata::{
-    ChildType, CHILDREN_PDA_SEED, ChildrenMetadataV2, ErrorCode
+    SOL_PDA_SEED, SolAccount
 };
 #[derive(Accounts)]
-pub struct BurnForSol<'info> {
+#[instruction(_bump: u8)]
+pub struct BurnForSolV2<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(mut)]
@@ -15,21 +16,21 @@ pub struct BurnForSol<'info> {
     pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
-        // owner--> parent_mint_account--> children_meta
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = parent_token_account.mint == parent_mint_account.key(),
-        seeds =  [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], 
-        bump = children_meta.bump,
+        constraint = sol_account.bump == _bump,
+        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()],
+        bump = sol_account.bump,
         close = current_owner
     )]
-    children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub sol_account: Account<'info, SolAccount>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> BurnForSol<'info> {
+impl<'info> BurnForSolV2<'info> {
     fn into_burn_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
         let cpi_accounts = Burn {
             mint: self.parent_mint_account.to_account_info().clone(),
@@ -41,13 +42,7 @@ impl<'info> BurnForSol<'info> {
     }
 }
 
-pub fn handler(ctx: Context<BurnForSol>) -> Result<()> {
-    // TODO verify the children number of the burnt nft
-    ctx.accounts.children_meta.is_mutated = true;
-
-    if ctx.accounts.children_meta.child_type != ChildType::SOL {
-        return err!(ErrorCode::InvalidBurnType);
-    }
+pub fn handler(ctx: Context<BurnForSolV2>, _bump: u8) -> Result<()> {
     token::burn(ctx.accounts.into_burn_context(), ctx.accounts.parent_token_account.amount)?;
     Ok(())
 }
