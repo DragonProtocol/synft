@@ -73,10 +73,9 @@ pub mod synft {
     pub fn inject_to_non_root_v2(
         ctx: Context<InjectToNonRootV2>,
         is_mutable: bool,
-        is_mutated: bool,
         bump: u8,
     ) -> Result<()> {
-        instructions::inject_to_non_root_v2::handler(ctx, is_mutable, is_mutated, bump)
+        instructions::inject_to_non_root_v2::handler(ctx, is_mutable, bump)
     }
 
     pub fn inject_to_sol_v2(
@@ -90,4 +89,8 @@ pub mod synft {
     pub fn transfer_child_nft_v2(ctx: Context<TransferChildNftV2>, _bump: u8) -> Result<()> {
         instructions::transfer_child_nft_v2::handler(ctx, _bump)
     }
+
+    pub fn extract_sol_v2(ctx: Context<ExtractSolV2>, _bump: u8) -> Result<()> {
+        instructions::extract_sol_v2::handler(ctx, _bump)
+     } 
 }

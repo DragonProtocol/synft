@@ -1,8 +1,8 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
-use std::mem::size_of;
+// use std::mem::size_of;
 
 #[derive(Accounts)]
 pub struct InjectToRootV2<'info> {
@@ -33,14 +33,14 @@ pub struct InjectToRootV2<'info> {
         seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
-    #[account(
-        init_if_needed, 
-        payer = current_owner,
-        // space: 8 discriminator + 32 owner + 32 nft + 32*32 immediate_children
-        space = 8 + size_of::<ParentMetadata>(),
-        seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump
-    )]
-    pub parent_meta: Box<Account<'info, ParentMetadata>>,
+    // #[account(
+    //     init_if_needed, 
+    //     payer = current_owner,
+    //     // space: 8 discriminator + 32 owner + 32 nft + 32*32 immediate_children
+    //     space = 8 + size_of::<ParentMetadata>(),
+    //     seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump
+    // )]
+    // pub parent_meta: Box<Account<'info, ParentMetadata>>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -66,8 +66,9 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, bump: u8) -> Resu
     ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
 
-    let immediate_children = ctx.accounts.parent_meta.immediate_children;
-    for child_nft in immediate_children.iter(){
+    // TODO 
+    // let immediate_children = ctx.accounts.parent_meta.immediate_children;
+    // for child_nft in immediate_children.iter(){
         // if child_nft != None {
 
         // }
@@ -76,7 +77,7 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, bump: u8) -> Resu
         // if !child_nft.to_string().is_empty() {
         //     ctx.accounts.children_meta.is_mutated = true;
         // }
-    }
+    // }
 
     token::set_authority(
         ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
@@ -87,21 +88,19 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, bump: u8) -> Resu
 }
 
 
-#[cfg(test)]
-mod tests {
-    use anchor_lang::prelude::*; 
+// #[cfg(test)]
+// mod tests {
+//     use anchor_lang::prelude::*; 
 
-    #[test]
-    fn it_works() {
-        let pubkey1 = Pubkey::new_unique();
-        let pubkey2 = Pubkey::new_unique();
+//     #[test]
+//     fn it_works() {
+//         let  pubkey1 = Pubkey::new_unique();
+//         let  pubkey2 = Pubkey::new_unique();
 
-        let arr: [Pubkey; 5]=[pubkey2;5];
-        // arr[0] = pubkey1;
-        for item in arr.iter() {
-            print!("{}", item);
-        }
-
-        // assert_eq!(2 + 2, 4);
-    }
-}
+//         let mut arr: [Pubkey; 5]=[pubkey2;5];
+//         arr[0] = pubkey1;
+//         for item in arr.iter() {
+//             print!("{}\n", item);
+//         }
+//     }
+// }

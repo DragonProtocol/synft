@@ -54,11 +54,12 @@ pub struct CrunkMetadata {
 pub struct ParentMetadata {
     pub owner: Pubkey,  // pointer to the owner
     pub nft: Pubkey,  // pointer to self mint
-    pub immediate_children: [Pubkey; 32], //pointer to immediate children
+    // pub immediate_children: [Pubkey; 32], //pointer to immediate children
 }
 
 #[account]
 pub struct SolAccount {
+    pub bump: u8,
 }
 
 #[error_code]

@@ -18,8 +18,8 @@ pub struct InjectSolV2<'info> {
     #[account(
         init,
         payer = current_owner,
-         // space: 8 discriminator +32 parent pubkey
-        space = 8+32,
+         // space: 8 discriminator + 1 bump
+        space = 8+1,
         constraint = parent_token_account.mint == parent_mint_account.key(),
         seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump
     )]
@@ -33,6 +33,7 @@ pub fn handler(
     _bump: u8,
     inject_sol_amount: u64,
 ) -> Result<()> {
+    ctx.accounts.sol_account.bump = _bump;
 
     invoke(
         &system_instruction::transfer(

@@ -295,6 +295,13 @@ describe("synft v2", () => {
       ],
       program.programId
     );
+    // const [_parent_metadata_pda_nft1, _parent_metadata_bump_nft1] = await PublicKey.findProgramAddress(
+    //   [
+    //     Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+    //     mint1.toBuffer(),
+    //   ],
+    //   program.programId
+    // );
     let initTx = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_1,
@@ -306,6 +313,7 @@ describe("synft v2", () => {
           parentTokenAccount: tokenAccount2.address,
           parentMintAccount: mint2,
           childrenMeta: _metadata_pda_2_1,
+          // parentMeta: _parent_metadata_pda_nft1,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -331,6 +339,13 @@ describe("synft v2", () => {
       ],
       program.programId
     );
+    // const [_parent_metadata_pda_nft0, _parent_metadata_bump_nft0] = await PublicKey.findProgramAddress(
+    //   [
+    //     Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+    //     mint0.toBuffer(),
+    //   ],
+    //   program.programId
+    // );
     let initTx1 = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_0,
@@ -342,6 +357,7 @@ describe("synft v2", () => {
           parentTokenAccount: tokenAccount2.address,
           parentMintAccount: mint2,
           childrenMeta: _metadata_pda_2_0,
+          // parentMeta: _parent_metadata_pda_nft0,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -404,10 +420,7 @@ describe("synft v2", () => {
       program.programId
     );
     let initTx2 = await program.rpc.injectToNonRootV2(
-      // `is_mutable` 
       true,
-      // `is_mutated` set false now
-      false,
       _child_metadata_bump,
       {
         accounts: {
@@ -507,17 +520,17 @@ describe("synft v2", () => {
     const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
-        mint1.toBuffer(),
+        mint2.toBuffer(),
       ],
       program.programId
     );
 
     const inject_sol_amount = 500000000;
 
-    let user1Account = await anchor
+    let user2Account = await anchor
       .getProvider()
       .connection.getAccountInfo(user1.publicKey);
-    const tokenAccount1Amount = user1Account.lamports;
+    const tokenAccount2Amount = user2Account.lamports;
 
     let initTx = await program.rpc.injectToSolV2(
       _sol_bump,
@@ -525,8 +538,8 @@ describe("synft v2", () => {
       {
         accounts: {
           currentOwner: user1.publicKey,
-          parentTokenAccount: tokenAccount1.address,
-          parentMintAccount: tokenAccount1.mint,
+          parentTokenAccount: tokenAccount2.address,
+          parentMintAccount: tokenAccount2.mint,
           solAccount: _sol_pda,
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -536,18 +549,51 @@ describe("synft v2", () => {
     );
 
     // volidate the balance of tokenAccount 1
-    user1Account = await anchor
+    user2Account = await anchor
       .getProvider()
       .connection.getAccountInfo(user1.publicKey);
 
     assert.ok(
-      user1Account.lamports,
-      Number(tokenAccount1Amount) - inject_sol_amount
+      user2Account.lamports,
+      Number(tokenAccount2Amount) - inject_sol_amount
     );
 
     let solAccount = await anchor
       .getProvider()
       .connection.getAccountInfo(_sol_pda);
     assert.ok(solAccount.lamports > inject_sol_amount);
+  });
+
+  it("Extract SOL", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
+        mint2.toBuffer(),
+      ],
+      program.programId
+    );
+
+    getAccount(connection, _sol_pda); // account exists
+    let extractTx = await program.rpc.extractSolV2(_sol_bump, {
+      accounts: {
+        currentOwner: user1.publicKey,
+        parentTokenAccount: tokenAccount2.address,
+        parentMintAccount: tokenAccount2.mint,
+        solAccount: _sol_pda,
+
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [user1],
+    });
+
+    const solAccountUser = await anchor
+      .getProvider()
+      .connection.getAccountInfo(user1.publicKey);
+    assert.ok(solAccountUser.lamports > 1500000000);
+
+    let solAccount = await program.account.solAccount.fetchNullable(_sol_pda);
+    assert.isNull(solAccount);
   });
 });

@@ -70,7 +70,6 @@ impl<'info> InjectToNonRootV2<'info> {
 pub fn handler(
     ctx: Context<InjectToNonRootV2>,
     is_mutable: bool,
-    is_mutated: bool,
     bump: u8,
 ) -> Result<()> {
     ctx.accounts.children_meta.is_mutable = is_mutable;
@@ -79,8 +78,6 @@ pub fn handler(
     ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
     ctx.accounts.children_meta.root = *ctx.accounts.root_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
-    ctx.accounts.children_meta.is_mutated = is_mutated;
-
     // TODO set new root metadata's `is_mutated` to ture if child nft has children
 
     token::set_authority(
