@@ -81,6 +81,8 @@ pub fn handler(
     ctx.accounts.children_meta.child_type = ChildType::NFT;
     ctx.accounts.children_meta.is_mutated = is_mutated;
 
+    // TODO set new root metadata's `is_mutated` to ture if child nft has children
+
     token::set_authority(
         ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
         AuthorityType::AccountOwner,

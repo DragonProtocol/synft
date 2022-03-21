@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 pub const CHILDREN_PDA_SEED: &[u8] = b"children-of";
+pub const PARENT_PDA_SEED: &[u8] = b"parent-metadata-seed";
 pub const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
 pub const SYNTHETIC_NFT_MINT_SEED: &[u8] = b"synthetic-nft-mint-seed";
 pub const SYNTHETIC_NFT_ACOUNT_SEED: &[u8] = b"synthetic-nft-account-seed";
@@ -43,13 +44,17 @@ pub struct CrunkMetadata {
     pub old_root_meta_data: Pubkey, // old root meta data
     pub new_root_meta_data: Pubkey, 
     pub new_owner: Pubkey,
-    pub not_updated_children: [Pubkey; 32],
+    pub not_processed_children: [Pubkey; 32], // children nodes that have not been processed
 }
 
+// use cases: 
+// 1. build the whole nft tree
+// 2. crunk processing depends on this structure 
 #[account]
 pub struct ParentMetadata {
-    pub parent: Pubkey,
-    pub immediate_children: [Pubkey; 32],
+    pub owner: Pubkey,  // pointer to the owner
+    pub nft: Pubkey,  // pointer to self mint
+    pub immediate_children: [Pubkey; 32], //pointer to immediate children
 }
 
 #[account]

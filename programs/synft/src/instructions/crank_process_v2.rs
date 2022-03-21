@@ -7,7 +7,7 @@ use solana_program::system_instruction;
 use crate::state::metadata::{SolAccount, SOL_PDA_SEED};
 
 #[derive(Accounts)]
-pub struct CrunkDirty<'info> {
+pub struct CrankProcess<'info> {
     // Do this instruction when the parent do NOT has any metadata associated
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
@@ -50,8 +50,10 @@ pub struct CrunkDirty<'info> {
 }
 
 pub fn handler(
-    ctx: Context<CrunkDirty>,
+    ctx: Context<CrankProcess>,
 ) -> Result<()> {
+    // TODO 
+
 
     Ok(())
 }
