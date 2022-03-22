@@ -87,6 +87,9 @@ describe("synft v2", () => {
   let mint4 = null as PublicKey;
   let mint5 = null as PublicKey;
   let mint6 = null as PublicKey;
+  let mint7 = null as PublicKey;
+  let mint8 = null as PublicKey;
+
   let tokenAccount0 = null as Account;
   let tokenAccount1 = null as Account;
   let tokenAccount2 = null as Account;
@@ -94,7 +97,8 @@ describe("synft v2", () => {
   let tokenAccount4 = null as Account;
   let tokenAccount5 = null as Account;
   let tokenAccount6 = null as Account;
-
+  let tokenAccount7 = null as Account;
+  let tokenAccount8 = null as Account;
 
   it("Is initialized!", async () => {
     let connection = anchor.getProvider().connection;
@@ -185,6 +189,20 @@ describe("synft v2", () => {
       mintAuthority.publicKey,
       0
     );
+    mint7 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint8 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
     tokenAccount0 = await getOrCreateAssociatedTokenAccount(
       connection,
       payer,
@@ -232,6 +250,20 @@ describe("synft v2", () => {
       payer,
       mint6,
       user2.publicKey,
+      true
+    );
+    tokenAccount7 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint7,
+      user1.publicKey,
+      true
+    );
+    tokenAccount8 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint8,
+      user1.publicKey,
       true
     );
     assert.ok(tokenAccount0.owner.toString() == user1.publicKey.toString());
@@ -305,6 +337,24 @@ describe("synft v2", () => {
       1,
       []
     );
+    let signature7 = await mintTo(
+      connection,
+      payer,
+      mint7,
+      tokenAccount7.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature8 = await mintTo(
+      connection,
+      payer,
+      mint8,
+      tokenAccount8.address,
+      mintAuthority,
+      1,
+      []
+    );
   });
 
   // Inject nft1 to  nft2, inject nft0 to  nft2
@@ -323,13 +373,6 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    // const [_parent_metadata_pda_nft1, _parent_metadata_bump_nft1] = await PublicKey.findProgramAddress(
-    //   [
-    //     Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
-    //     mint1.toBuffer(),
-    //   ],
-    //   program.programId
-    // );
     let initTx = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_1,
@@ -367,13 +410,6 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    // const [_parent_metadata_pda_nft0, _parent_metadata_bump_nft0] = await PublicKey.findProgramAddress(
-    //   [
-    //     Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
-    //     mint0.toBuffer(),
-    //   ],
-    //   program.programId
-    // );
     let initTx1 = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_0,
@@ -555,10 +591,10 @@ describe("synft v2", () => {
 
     const inject_sol_amount = 500000000;
 
-    let user2Account = await anchor
+    let user1Account = await anchor
       .getProvider()
       .connection.getAccountInfo(user1.publicKey);
-    const tokenAccount2Amount = user2Account.lamports;
+    const tokenAccount2Amount = user1Account.lamports;
 
     let initTx = await program.rpc.injectToSolV2(
       _sol_bump,
@@ -577,12 +613,12 @@ describe("synft v2", () => {
     );
 
     // volidate the balance of tokenAccount 1
-    user2Account = await anchor
+    user1Account = await anchor
       .getProvider()
       .connection.getAccountInfo(user1.publicKey);
 
     assert.ok(
-      user2Account.lamports,
+      user1Account.lamports,
       Number(tokenAccount2Amount) - inject_sol_amount
     );
 
@@ -601,13 +637,23 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-
+    const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        mint2.toBuffer(),
+        mint1.toBuffer(),
+      ],
+      program.programId
+    );
     getAccount(connection, _sol_pda); // account exists
     let extractTx = await program.rpc.extractSolV2(_sol_bump, {
       accounts: {
         currentOwner: user1.publicKey,
+        rootTokenAccount: tokenAccount2.address,
+        rootMintAccount: tokenAccount2.mint,
         parentTokenAccount: tokenAccount2.address,
         parentMintAccount: tokenAccount2.mint,
+        rootMeta: _root_metadata_pda,
         solAccount: _sol_pda,
 
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -682,13 +728,146 @@ describe("synft v2", () => {
       }
     );
 
-    const nftTokenAccount  = await getOrCreateAssociatedTokenAccount(
+    const nftTokenAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       payer,
       mint6,
       user2.publicKey,
       true
-    );    
+    );
     assert.ok(nftTokenAccount.owner.toString() == user2.publicKey);
+  });
+
+  // Inject sol to nft2, burn nft2 for sol
+  //    nft2
+  //     |
+  //    nft0 
+  it("Burn for SOL", async () => {
+    let connection = anchor.getProvider().connection;
+    // inject sol to nft2
+    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
+        mint2.toBuffer(),
+      ],
+      program.programId
+    );
+    const inject_sol_amount = 500000000;
+    let user1Account = await anchor
+      .getProvider()
+      .connection.getAccountInfo(user1.publicKey);
+    const tokenAccount2Amount = user1Account.lamports;
+    let injectTx = await program.rpc.injectToSolV2(
+      _sol_bump,
+      new anchor.BN(inject_sol_amount),
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          parentTokenAccount: tokenAccount2.address,
+          parentMintAccount: tokenAccount2.mint,
+          solAccount: _sol_pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [user1],
+      }
+    );
+    // volidate the balance of tokenAccount 1
+    let injectedUser1Account = await anchor
+      .getProvider()
+      .connection.getAccountInfo(user1.publicKey);
+    assert.ok(
+      injectedUser1Account.lamports,
+      Number(tokenAccount2Amount) - inject_sol_amount
+    );
+    // burn nft2 for sol
+    let burnTx = await program.rpc.burnForSolV2(
+      _sol_bump,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          parentMintAccount: tokenAccount2.mint,
+          parentTokenAccount: tokenAccount2.address,
+          solAccount: _sol_pda,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      });
+
+    user1Account = await anchor
+      .getProvider()
+      .connection.getAccountInfo(user1.publicKey);
+    assert.ok(user1Account.lamports > injectedUser1Account.lamports + inject_sol_amount);
+    let solAccountAfter = await program.account.childrenMetadata.fetchNullable(_sol_pda);
+    assert.ok(solAccountAfter === null);
+  });
+
+  // Burn NFT3  
+  // user1         user1          
+  //  |              |
+  // nft7   >>>     nft8     
+  //  |            
+  // nft8  
+  it("Burn for token", async () => {
+    let connection = anchor.getProvider().connection;
+    // inject nft8 to nft7
+    const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        mint7.toBuffer(),
+        mint8.toBuffer(),
+      ],
+      program.programId
+    );
+    let initTx = await program.rpc.injectToRootV2(
+      true,
+      _root_metadata_bump,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          childTokenAccount: tokenAccount8.address,
+          childMintAccount: mint8,
+          parentTokenAccount: tokenAccount7.address,
+          parentMintAccount: mint7,
+          childrenMeta: _root_metadata_pda,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      }
+    );
+    let childrenMeta = await program.account.childrenMetadataV2.fetch(
+      _root_metadata_pda
+    );
+    assert.ok(childrenMeta.isMutable == true);
+    assert.ok(childrenMeta.bump == _root_metadata_bump);
+    assert.ok(childrenMeta.child.toString() == mint8.toString());
+
+    // burn nft7
+    let burnTx = await program.rpc.burnForTokenV2({
+      accounts: {
+        currentOwner: user1.publicKey,
+        parentMintAccount: tokenAccount7.mint,
+        parentTokenAccount: tokenAccount7.address,
+        childMintAccount: tokenAccount8.mint,
+        childTokenAccount: tokenAccount8.address,
+        childrenMeta: _root_metadata_pda,
+
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [user1],
+    });
+    assert.isOk(tokenAccount8.owner.toBase58() == user1.publicKey.toBase58());
+    let metadata = await program.account.childrenMetadataV2.fetchNullable(
+      _root_metadata_pda
+    );
+    assert.isNull(metadata);
   });
 });

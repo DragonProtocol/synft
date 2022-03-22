@@ -1,10 +1,6 @@
+use crate::state::metadata::{SolAccount, SOL_PDA_SEED};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{
-    self, Mint, Token, TokenAccount, Burn
-};
-use crate::state::metadata::{
-    SOL_PDA_SEED, SolAccount
-};
+use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount};
 #[derive(Accounts)]
 #[instruction(_bump: u8)]
 pub struct BurnForSolV2<'info> {
@@ -43,6 +39,9 @@ impl<'info> BurnForSolV2<'info> {
 }
 
 pub fn handler(ctx: Context<BurnForSolV2>, _bump: u8) -> Result<()> {
-    token::burn(ctx.accounts.into_burn_context(), ctx.accounts.parent_token_account.amount)?;
+    token::burn(
+        ctx.accounts.into_burn_context(),
+        ctx.accounts.parent_token_account.amount,
+    )?;
     Ok(())
 }

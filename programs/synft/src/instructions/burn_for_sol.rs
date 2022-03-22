@@ -3,7 +3,7 @@ use anchor_spl::token::{
     self, Mint, Token, TokenAccount, Burn
 };
 use crate::state::metadata::{
-    ChildType, CHILDREN_PDA_SEED, ChildrenMetadataV2, ErrorCode
+    ChildType, CHILDREN_PDA_SEED, ChildrenMetadata, ErrorCode
 };
 #[derive(Accounts)]
 pub struct BurnForSol<'info> {
@@ -22,7 +22,7 @@ pub struct BurnForSol<'info> {
         bump = children_meta.bump,
         close = current_owner
     )]
-    children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    children_meta: Box<Account<'info, ChildrenMetadata>>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -42,9 +42,6 @@ impl<'info> BurnForSol<'info> {
 }
 
 pub fn handler(ctx: Context<BurnForSol>) -> Result<()> {
-    // TODO verify the children number of the burnt nft
-    ctx.accounts.children_meta.is_mutated = true;
-
     if ctx.accounts.children_meta.child_type != ChildType::SOL {
         return err!(ErrorCode::InvalidBurnType);
     }

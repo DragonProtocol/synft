@@ -65,20 +65,6 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, bump: u8) -> Resu
     ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
     ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
-
-    // TODO 
-    // let immediate_children = ctx.accounts.parent_meta.immediate_children;
-    // for child_nft in immediate_children.iter(){
-        // if child_nft != None {
-
-        // }
-
-        // set set_mutated
-        // if !child_nft.to_string().is_empty() {
-        //     ctx.accounts.children_meta.is_mutated = true;
-        // }
-    // }
-
     token::set_authority(
         ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
         AuthorityType::AccountOwner,
@@ -86,21 +72,3 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, bump: u8) -> Resu
     )?;
     Ok(())
 }
-
-
-// #[cfg(test)]
-// mod tests {
-//     use anchor_lang::prelude::*; 
-
-//     #[test]
-//     fn it_works() {
-//         let  pubkey1 = Pubkey::new_unique();
-//         let  pubkey2 = Pubkey::new_unique();
-
-//         let mut arr: [Pubkey; 5]=[pubkey2;5];
-//         arr[0] = pubkey1;
-//         for item in arr.iter() {
-//             print!("{}\n", item);
-//         }
-//     }
-// }
