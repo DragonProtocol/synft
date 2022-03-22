@@ -101,11 +101,7 @@ pub mod synft {
         instructions::extract_v2::handler(ctx, _bump)
     }
 
-    pub fn burn_for_sol_v2(ctx: Context<BurnForSolV2>, _bump: u8) -> Result<()> {
-        instructions::burn_for_sol_v2::handler(ctx, _bump)
-    }
-
-    pub fn burn_for_token_v2(ctx: Context<BurnForTokenV2>) -> Result<()> {
-        instructions::burn_for_token_v2::handler(ctx)
+    pub fn burn_for_sol_v2(ctx: Context<BurnV2>, _bump: u8) -> Result<()> {
+        instructions::burn_v2::handler(ctx, _bump)
     }
 }

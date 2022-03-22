@@ -4,7 +4,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 use solana_program::program::invoke;
 use solana_program::system_instruction;
 
-use crate::state::metadata::{SolAccount, SOL_PDA_SEED};
+use crate::state::metadata::{PARENT_PDA_SEED, ParentMetadata};
 
 #[derive(Accounts)]
 pub struct InjectSolV2<'info> {
@@ -16,14 +16,15 @@ pub struct InjectSolV2<'info> {
     pub parent_token_account: Account<'info, TokenAccount>,
     pub parent_mint_account: Account<'info, Mint>,
     #[account(
-        init,
+        init_if_needed,
         payer = current_owner,
          // space: 8 discriminator + 1 bump
         space = 8+1,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = parent_token_account.mint == parent_mint_account.key(),
-        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump
+        seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump
     )]
-    pub sol_account: Account<'info, SolAccount>,
+    pub self_metadata: Account<'info, ParentMetadata>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }
@@ -33,17 +34,17 @@ pub fn handler(
     _bump: u8,
     inject_sol_amount: u64,
 ) -> Result<()> {
-    ctx.accounts.sol_account.bump = _bump;
+    ctx.accounts.self_metadata.bump = _bump;
 
     invoke(
         &system_instruction::transfer(
             ctx.accounts.current_owner.key,
-            ctx.accounts.sol_account.to_account_info().key,
+            ctx.accounts.self_metadata.to_account_info().key,
             inject_sol_amount,
         ),
         &[
             ctx.accounts.current_owner.to_account_info(),
-            ctx.accounts.sol_account.to_account_info(),
+            ctx.accounts.self_metadata.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
         ],
     )?;

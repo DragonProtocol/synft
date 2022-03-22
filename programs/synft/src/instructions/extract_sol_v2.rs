@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
-
 use anchor_spl::token::{Mint, TokenAccount};
-
-use crate::state::metadata::{ChildrenMetadataV2, SolAccount, SOL_PDA_SEED};
+use crate::state::metadata::{ChildrenMetadataV2, ParentMetadata, PARENT_PDA_SEED};
+use anchor_lang::AccountsClose;
 
 #[derive(Accounts)]
 #[instruction(_bump: u8)]
@@ -29,21 +28,23 @@ pub struct ExtractSolV2<'info> {
     pub parent_token_account: Account<'info, TokenAccount>,
     pub parent_mint_account: Account<'info, Mint>,
     #[account(
-        mut,
-        constraint = (parent_token_account.owner == *current_owner.to_account_info().key || parent_token_account.owner == *root_meta.to_account_info().key),
+        init_if_needed,
+        payer = current_owner,
+        space = 8+1,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = parent_token_account.mint == parent_mint_account.key(),
-        constraint = sol_account.bump == _bump,
-        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()],
-        bump = sol_account.bump,
-        close = current_owner
+        constraint = self_metadata.bump == _bump,
+        seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump,
     )]
-    pub sol_account: Account<'info, SolAccount>,
+    pub self_metadata: Account<'info, ParentMetadata>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(_ctx: Context<ExtractSolV2>, _bump: u8) -> Result<()> {
-    // close meta_data account
+pub fn handler(ctx: Context<ExtractSolV2>, _bump: u8) -> Result<()> {
+    ctx.accounts
+        .self_metadata
+        .close(ctx.accounts.current_owner.to_account_info())?;
     Ok(())
 }

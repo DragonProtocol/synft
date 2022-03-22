@@ -32,7 +32,6 @@ pub struct ExtractV2<'info> {
         constraint = parent_meta.parent == parent_mint_account.key(),
         constraint = parent_meta.child == child_mint_account.key(),
         constraint = parent_meta.root == root_meta.key(),
-
     )]
     pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
     pub child_mint_account: Box<Account<'info, Mint>>,
