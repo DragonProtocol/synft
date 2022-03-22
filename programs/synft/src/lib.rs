@@ -97,11 +97,7 @@ pub mod synft {
         instructions::extract_sol_v2::handler(ctx, _bump)
     }
 
-    pub fn extract_v2(ctx: Context<ExtractV2>, _bump: u8) -> Result<()> {
-        instructions::extract_v2::handler(ctx, _bump)
-    }
-
-    pub fn burn_for_sol_v2(ctx: Context<BurnV2>, _bump: u8) -> Result<()> {
-        instructions::burn_v2::handler(ctx, _bump)
+    pub fn burn_v2(ctx: Context<BurnV2>,  _sol_account_bump: u8, _parent_metadata_bump: u8) -> Result<()> {
+        instructions::burn_v2::handler(ctx, _sol_account_bump, _parent_metadata_bump)
     }
 }

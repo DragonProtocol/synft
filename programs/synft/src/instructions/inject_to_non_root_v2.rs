@@ -47,7 +47,6 @@ pub struct InjectToNonRootV2<'info> {
         constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
         constraint = root_meta.is_mutated == false,
-        constraint = root_meta.is_burnt == false,
     )]
     pub root_meta: Box<Account<'info, ChildrenMetadataV2>>,
 

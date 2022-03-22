@@ -25,7 +25,6 @@ pub struct ChildrenMetadataV2 {
     pub root: Pubkey,
     pub is_mutable: bool,
     pub is_mutated: bool,
-    pub is_burnt: bool,
     pub child_type: ChildType,
     pub bump: u8,
 }
@@ -38,7 +37,6 @@ pub enum ChildType {
 }
 
 #[account]
-#[derive(Default)]
 pub struct CrunkMetadata {
     pub tranfered_nft: Pubkey, // nft mint account
     pub old_root_meta_data: Pubkey, // old root meta data
@@ -54,7 +52,8 @@ pub struct CrunkMetadata {
 pub struct ParentMetadata {
     // pub nft: Pubkey,  // pointer to self mint
     pub bump: u8,
-    // pub immediate_children: [Pubkey; 32], //pointer to immediate children
+    pub is_burnt: bool,
+    // pub immediate_children: [Pubkey; 3], //pointer to immediate children
 }
 
 #[account]

@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, TokenAccount};
-use crate::state::metadata::{ChildrenMetadataV2, ParentMetadata, PARENT_PDA_SEED};
+use crate::state::metadata::{ChildrenMetadataV2, SolAccount, SOL_PDA_SEED};
 use anchor_lang::AccountsClose;
+use std::mem::size_of;
 
 #[derive(Accounts)]
 #[instruction(_bump: u8)]
@@ -21,7 +22,6 @@ pub struct ExtractSolV2<'info> {
         constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
         constraint = root_meta.is_mutated == false,
-        constraint = root_meta.is_burnt == false,
     )]
     pub root_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(mut)]
@@ -30,13 +30,13 @@ pub struct ExtractSolV2<'info> {
     #[account(
         init_if_needed,
         payer = current_owner,
-        space = 8+1,
+        space = size_of::<SolAccount>() + 8,
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = parent_token_account.mint == parent_mint_account.key(),
-        constraint = self_metadata.bump == _bump,
-        seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump,
+        constraint = sol_account.bump == _bump,
+        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump,
     )]
-    pub self_metadata: Account<'info, ParentMetadata>,
+    pub sol_account: Account<'info, SolAccount>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -44,7 +44,7 @@ pub struct ExtractSolV2<'info> {
 
 pub fn handler(ctx: Context<ExtractSolV2>, _bump: u8) -> Result<()> {
     ctx.accounts
-        .self_metadata
+        .sol_account
         .close(ctx.accounts.current_owner.to_account_info())?;
     Ok(())
 }

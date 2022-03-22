@@ -3,12 +3,13 @@ use anchor_spl::token::{
     self, Mint, Token, TokenAccount, Burn
 };
 use crate::state::metadata::{
-    PARENT_PDA_SEED, ParentMetadata
+    PARENT_PDA_SEED, SOL_PDA_SEED, ParentMetadata, SolAccount
 };
 use anchor_lang::AccountsClose;
+use std::mem::size_of;
 
 #[derive(Accounts)]
-#[instruction(_bump: u8)]
+#[instruction( _sol_account_bump: u8, _parent_metadata_bump: u8)]
 pub struct BurnV2<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
@@ -19,13 +20,22 @@ pub struct BurnV2<'info> {
     #[account(
         init_if_needed,
         payer = current_owner,
-        space = 8+1,
+        space = size_of::<ParentMetadata>() + 8,
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = parent_token_account.mint == parent_mint_account.key(),
-        constraint = self_metadata.bump == _bump,
         seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump,
     )]
-    pub self_metadata : Account<'info, ParentMetadata>,
+    pub parent_metadata : Account<'info, ParentMetadata>,
+    #[account(
+        init_if_needed,
+        payer = current_owner,
+        space = size_of::<SolAccount>() + 8,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        constraint = parent_token_account.mint == parent_mint_account.key(),
+        constraint = sol_account.bump == _sol_account_bump,
+        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump,
+    )]
+    pub sol_account : Account<'info, SolAccount>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -44,11 +54,11 @@ impl<'info> BurnV2<'info> {
     }
 }
 
-pub fn handler(ctx: Context<BurnV2>, _bump: u8) -> Result<()> {
-    ctx.accounts.self_metadata.bump = _bump;
+pub fn handler(ctx: Context<BurnV2>, _sol_account_bump: u8, _parent_metadata_bump: u8) -> Result<()> {
+    ctx.accounts.parent_metadata.is_burnt = true;
     token::burn(ctx.accounts.into_burn_context(), ctx.accounts.parent_token_account.amount)?;
     ctx.accounts
-            .self_metadata
+            .sol_account
             .close(ctx.accounts.current_owner.to_account_info())?;
     Ok(())
 }
