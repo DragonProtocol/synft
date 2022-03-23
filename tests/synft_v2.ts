@@ -373,9 +373,17 @@ describe("synft v2", () => {
       ],
       program.programId
     );
+    const [_parent_pda, _parent_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+        mint2.toBuffer(),
+      ],
+      program.programId
+    );
     let initTx = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_1,
+      _parent_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -384,7 +392,7 @@ describe("synft v2", () => {
           parentTokenAccount: tokenAccount2.address,
           parentMintAccount: mint2,
           childrenMeta: _metadata_pda_2_1,
-          // parentMeta: _parent_metadata_pda_nft1,
+          parentMeta: _parent_pda,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -413,6 +421,7 @@ describe("synft v2", () => {
     let initTx1 = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_0,
+      _parent_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -421,7 +430,7 @@ describe("synft v2", () => {
           parentTokenAccount: tokenAccount2.address,
           parentMintAccount: mint2,
           childrenMeta: _metadata_pda_2_0,
-          // parentMeta: _parent_metadata_pda_nft0,
+          parentMeta: _parent_pda,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -455,9 +464,17 @@ describe("synft v2", () => {
       ],
       program.programId
     );
+    const [_nft3_parent_metadata_pda, _nft3_parent_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+        mint3.toBuffer(),
+      ],
+      program.programId
+    );
     let initTx1 = await program.rpc.injectToRootV2(
       true,
       _root_metadata_bump,
+      _nft3_parent_metadata_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -466,7 +483,7 @@ describe("synft v2", () => {
           parentTokenAccount: tokenAccount3.address,
           parentMintAccount: mint3,
           childrenMeta: _root_metadata_pda,
-
+          parentMeta: _nft3_parent_metadata_pda,
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -483,9 +500,17 @@ describe("synft v2", () => {
       ],
       program.programId
     );
+    const [_nft4_parent_metadata_pda, _nft4_parent_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+        mint4.toBuffer(),
+      ],
+      program.programId
+    );
     let initTx2 = await program.rpc.injectToNonRootV2(
       true,
       _child_metadata_bump,
+      _nft4_parent_metadata_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -496,9 +521,9 @@ describe("synft v2", () => {
           rootTokenAccount: tokenAccount3.address,
           rootMintAccount: mint3,
           childrenMeta: _child_metadata_pda,
-          parentMeta: _root_metadata_pda,
+          parentOfChildrenMeta: _root_metadata_pda,
           rootMeta: _root_metadata_pda,
-
+          parentMeta:_nft4_parent_metadata_pda,
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -670,73 +695,6 @@ describe("synft v2", () => {
     let solAccount = await program.account.solAccount.fetchNullable(_sol_pda);
     assert.isNull(solAccount);
   });
-  // Extract NFT, extract nft5 to user2
-  // user2          user2           
-  //  |             /   \   
-  // nft5        nft5  nft6 
-  //  |            
-  // nft6  
-  // it("Extract NFT to user", async () => {
-  //   let connection = anchor.getProvider().connection;
-  //   // inject nft6 to nft5
-  //   const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
-  //     [
-  //       Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-  //       mint5.toBuffer(),
-  //       mint6.toBuffer(),
-  //     ],
-  //     program.programId
-  //   );
-  //   let initTx1 = await program.rpc.injectToRootV2(
-  //     true,
-  //     _root_metadata_bump,
-  //     {
-  //       accounts: {
-  //         currentOwner: user2.publicKey,
-  //         childTokenAccount: tokenAccount6.address,
-  //         childMintAccount: mint6,
-  //         parentTokenAccount: tokenAccount5.address,
-  //         parentMintAccount: mint5,
-  //         childrenMeta: _root_metadata_pda,
-  //         // parentMeta: _parent_metadata_pda_nft0,
-
-  //         systemProgram: anchor.web3.SystemProgram.programId,
-  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-  //         tokenProgram: TOKEN_PROGRAM_ID,
-  //       },
-  //       signers: [user2],
-  //     }
-  //   );
-
-  //   let initTx = await program.rpc.extractV2(_root_metadata_bump,
-  //     {
-  //       accounts: {
-  //         currentOwner: user2.publicKey,
-  //         childTokenAccount: tokenAccount6.address,
-  //         childMintAccount: mint6,
-  //         rootTokenAccount: tokenAccount5.address,
-  //         rootMintAccount: mint5,
-  //         parentMeta: _root_metadata_pda,
-  //         parentMintAccount: mint5,
-  //         rootMeta: _root_metadata_pda,
-
-  //         systemProgram: anchor.web3.SystemProgram.programId,
-  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-  //         tokenProgram: TOKEN_PROGRAM_ID,
-  //       },
-  //       signers: [user2],
-  //     }
-  //   );
-
-  //   const nftTokenAccount = await getOrCreateAssociatedTokenAccount(
-  //     connection,
-  //     payer,
-  //     mint6,
-  //     user2.publicKey,
-  //     true
-  //   );
-  //   assert.ok(nftTokenAccount.owner.toString() == user2.publicKey);
-  // });
 
   // Inject sol to nft2, burn nft2 for sol
   //    nft2
@@ -805,78 +763,8 @@ describe("synft v2", () => {
         signers: [user1],
       });
 
-    // user1Account = await anchor
-    //   .getProvider()
-    //   .connection.getAccountInfo(user1.publicKey);
-    // console.log(user1Account.lamports, injectedUser1Account.lamports,  inject_sol_amount)
-    // assert.ok(user1Account.lamports > injectedUser1Account.lamports + inject_sol_amount);
     let solAccountAfter = await program.account.solAccount.fetchNullable(_sol_pda);
     assert.ok(solAccountAfter === null);
   });
 
-  // Burn NFT3  
-  // user1         user1          
-  //  |              |
-  // nft7   >>>     nft8     
-  //  |            
-  // nft8  
-  // it("Burn for token", async () => {
-  //   let connection = anchor.getProvider().connection;
-  //   // inject nft8 to nft7
-  //   const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
-  //     [
-  //       Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-  //       mint7.toBuffer(),
-  //       mint8.toBuffer(),
-  //     ],
-  //     program.programId
-  //   );
-  //   let initTx = await program.rpc.injectToRootV2(
-  //     true,
-  //     _root_metadata_bump,
-  //     {
-  //       accounts: {
-  //         currentOwner: user1.publicKey,
-  //         childTokenAccount: tokenAccount8.address,
-  //         childMintAccount: mint8,
-  //         parentTokenAccount: tokenAccount7.address,
-  //         parentMintAccount: mint7,
-  //         childrenMeta: _root_metadata_pda,
-
-  //         systemProgram: anchor.web3.SystemProgram.programId,
-  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-  //         tokenProgram: TOKEN_PROGRAM_ID,
-  //       },
-  //       signers: [user1],
-  //     }
-  //   );
-  //   let childrenMeta = await program.account.childrenMetadataV2.fetch(
-  //     _root_metadata_pda
-  //   );
-  //   assert.ok(childrenMeta.isMutable == true);
-  //   assert.ok(childrenMeta.bump == _root_metadata_bump);
-  //   assert.ok(childrenMeta.child.toString() == mint8.toString());
-
-  //   // burn nft7
-  //   let burnTx = await program.rpc.burnForTokenV2({
-  //     accounts: {
-  //       currentOwner: user1.publicKey,
-  //       parentMintAccount: tokenAccount7.mint,
-  //       parentTokenAccount: tokenAccount7.address,
-  //       childMintAccount: tokenAccount8.mint,
-  //       childTokenAccount: tokenAccount8.address,
-  //       childrenMeta: _root_metadata_pda,
-
-  //       systemProgram: anchor.web3.SystemProgram.programId,
-  //       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-  //       tokenProgram: TOKEN_PROGRAM_ID,
-  //     },
-  //     signers: [user1],
-  //   });
-  //   assert.isOk(tokenAccount8.owner.toBase58() == user1.publicKey.toBase58());
-  //   let metadata = await program.account.childrenMetadataV2.fetchNullable(
-  //     _root_metadata_pda
-  //   );
-  //   assert.isNull(metadata);
-  // });
 });

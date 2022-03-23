@@ -1,7 +1,8 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT, PLACEHOLDER_PUBKEY};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
+use std::mem::size_of;
 
 #[derive(Accounts)]
 pub struct InjectToNonRootV2<'info> {
@@ -39,16 +40,24 @@ pub struct InjectToNonRootV2<'info> {
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
-        constraint = parent_meta.root != parent_mint_account.key(),
-        constraint = (parent_meta.root == root_meta.key()),
+        constraint = parent_of_children_meta.root != parent_mint_account.key(),
+        constraint = parent_of_children_meta.root == root_meta.key(),
     )]
-    pub parent_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub parent_of_children_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
         constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
         constraint = root_meta.is_mutated == false,
     )]
     pub root_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    #[account(
+        init_if_needed, 
+        payer = current_owner,
+        space = 8 + size_of::<ParentMetadata>(),
+        seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump,
+        constraint = parent_meta.height < TREE_LEVEL_HEIGHT_LIMIT,
+    )]
+    pub parent_meta: Box<Account<'info, ParentMetadata>>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -69,15 +78,27 @@ impl<'info> InjectToNonRootV2<'info> {
 pub fn handler(
     ctx: Context<InjectToNonRootV2>,
     is_mutable: bool,
-    bump: u8,
+    child_bump: u8,
+    parent_bump: u8,
 ) -> Result<()> {
     ctx.accounts.children_meta.is_mutable = is_mutable;
-    ctx.accounts.children_meta.bump = bump;
+    ctx.accounts.children_meta.bump = child_bump;
     ctx.accounts.children_meta.child = *ctx.accounts.child_mint_account.to_account_info().key;
     ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
     ctx.accounts.children_meta.root = *ctx.accounts.root_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
-    // TODO set new root metadata's `is_mutated` to ture if child nft has children
+
+    ctx.accounts.parent_meta.height += 1;
+    ctx.accounts.parent_meta.is_burnt = false;
+    ctx.accounts.parent_meta.bump = parent_bump;
+    for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
+        if child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
+            if child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
+                *child = ctx.accounts.children_meta.child;
+                break;
+            }
+        }
+    }
 
     token::set_authority(
         ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
@@ -85,4 +106,27 @@ pub fn handler(
         Some(*ctx.accounts.children_meta.to_account_info().key),
     )?;
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    // 注意这个惯用法：在 tests 模块中，从外部作用域导入所有名字。
+    use super::*;
+
+    #[test]
+    fn test_pubkey_equal() {
+        let mut immediate_children: [Pubkey; 3] = [PLACEHOLDER_PUBKEY,PLACEHOLDER_PUBKEY,PLACEHOLDER_PUBKEY];
+        let  k1 = Pubkey::new_unique();
+        for child in immediate_children.iter_mut() {
+            if child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
+                println!("################");
+                *child = k1;
+                break;
+            }
+        }
+        for child in immediate_children.iter_mut() {
+            println!("{:?}", child);
+        }
+    }
 }

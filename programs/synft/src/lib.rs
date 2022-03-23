@@ -68,17 +68,19 @@ pub mod synft {
     pub fn inject_to_root_v2(
         ctx: Context<InjectToRootV2>,
         is_mutable: bool,
-        bump: u8,
+        child_bump: u8,
+        parent_bump: u8,
     ) -> Result<()> {
-        instructions::inject_to_root_v2::handler(ctx, is_mutable, bump)
+        instructions::inject_to_root_v2::handler(ctx, is_mutable, child_bump, parent_bump)
     }
 
     pub fn inject_to_non_root_v2(
         ctx: Context<InjectToNonRootV2>,
         is_mutable: bool,
-        bump: u8,
+        child_bump: u8,
+        parent_bump: u8,
     ) -> Result<()> {
-        instructions::inject_to_non_root_v2::handler(ctx, is_mutable, bump)
+        instructions::inject_to_non_root_v2::handler(ctx, is_mutable, child_bump, parent_bump)
     }
 
     pub fn inject_to_sol_v2(
@@ -97,7 +99,11 @@ pub mod synft {
         instructions::extract_sol_v2::handler(ctx, _bump)
     }
 
-    pub fn burn_v2(ctx: Context<BurnV2>,  _sol_account_bump: u8, _parent_metadata_bump: u8) -> Result<()> {
+    pub fn burn_v2(
+        ctx: Context<BurnV2>,
+        _sol_account_bump: u8,
+        _parent_metadata_bump: u8,
+    ) -> Result<()> {
         instructions::burn_v2::handler(ctx, _sol_account_bump, _parent_metadata_bump)
     }
 }

@@ -6,6 +6,7 @@ pub const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
 pub const SYNTHETIC_NFT_MINT_SEED: &[u8] = b"synthetic-nft-mint-seed";
 pub const SYNTHETIC_NFT_ACOUNT_SEED: &[u8] = b"synthetic-nft-account-seed";
 pub const SOL_PDA_SEED: &[u8] = b"sol-seed";
+pub const TREE_LEVEL_HEIGHT_LIMIT: u8 = 3;
 
 pub const PLACEHOLDER_PUBKEY: Pubkey = Pubkey::new_from_array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
 
