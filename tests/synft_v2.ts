@@ -575,7 +575,7 @@ describe("synft v2", () => {
           childMintAccount: mint5,
           rootTokenAccount: tokenAccount3.address,
           rootMintAccount: mint3,
-          parentMeta: _parent_meta_pda,
+          parentOfChildrenMeta: _parent_meta_pda,
           parentMintAccount: mint4,
           rootMeta: _root_metadata_pda,
           receiverAccount: user2.publicKey,
@@ -592,12 +592,10 @@ describe("synft v2", () => {
       _root_metadata_pda
     );
     assert.isOk(rootMeta.isMutated == true);
-
-    // volidate that parentMeta is deleted.
     let parentMeta = await program.account.childrenMetadataV2.fetchNullable(
       _parent_meta_pda
     );
-    assert.isNull(parentMeta);
+    assert.isOk(parentMeta.isMutated == true);
   });
 
   /**
