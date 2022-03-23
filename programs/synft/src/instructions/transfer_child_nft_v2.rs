@@ -1,6 +1,5 @@
 use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED};
 use anchor_lang::prelude::*;
-use anchor_lang::AccountsClose;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
 

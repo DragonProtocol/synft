@@ -40,7 +40,7 @@ pub enum ChildType {
 }
 
 #[account]
-pub struct CrunkMetadata {
+pub struct CrankMetadata {
     pub tranfered_nft: Pubkey, // nft mint account
     pub old_root_meta_data: Pubkey, // old root meta data
     pub new_root_meta_data: Pubkey, 
@@ -49,7 +49,7 @@ pub struct CrunkMetadata {
 
 // use cases: 
 // 1. build the whole nft tree
-// 2. crunk processing depends on this structure 
+// 2. crank processing depends on this structure 
 #[account]
 pub struct ParentMetadata {
     // pub nft: Pubkey,  // pointer to self mint
