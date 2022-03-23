@@ -34,16 +34,15 @@ pub struct InjectToNonRootV2<'info> {
     #[account(
         init,
         payer = current_owner,
-        // space: 8 discriminator + 1 is_mutable + 1 is_mutated + 1 is_parent_root + 1 is_burnt + 32 child pubkey + 32 parent pubkey + 32 root pubkey + 1 bump + 4 child type
-        space = 8+1+1+1+1+32+32+32+1+4,
+        space = 8 + size_of::<ChildrenMetadataV2>(),
         seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
-        constraint = parent_of_children_meta.root != parent_mint_account.key(),
-        constraint = parent_of_children_meta.root == root_meta.key(),
+        constraint = children_meta_of_parent.root != parent_mint_account.key(),
+        constraint = children_meta_of_parent.root == root_meta.key(),
     )]
-    pub parent_of_children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta_of_parent: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
         constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
@@ -106,27 +105,4 @@ pub fn handler(
         Some(*ctx.accounts.children_meta.to_account_info().key),
     )?;
     Ok(())
-}
-
-
-#[cfg(test)]
-mod tests {
-    // 注意这个惯用法：在 tests 模块中，从外部作用域导入所有名字。
-    use super::*;
-
-    #[test]
-    fn test_pubkey_equal() {
-        let mut immediate_children: [Pubkey; 3] = [PLACEHOLDER_PUBKEY,PLACEHOLDER_PUBKEY,PLACEHOLDER_PUBKEY];
-        let  k1 = Pubkey::new_unique();
-        for child in immediate_children.iter_mut() {
-            if child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
-                println!("################");
-                *child = k1;
-                break;
-            }
-        }
-        for child in immediate_children.iter_mut() {
-            println!("{:?}", child);
-        }
-    }
 }

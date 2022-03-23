@@ -106,4 +106,8 @@ pub mod synft {
     ) -> Result<()> {
         instructions::burn_v2::handler(ctx, _sol_account_bump, _parent_metadata_bump)
     }
+
+    pub fn transfer_crank_v2(ctx: Context<TransferCrank>) -> Result<()> {
+        instructions::transfer_crank_v2::handler(ctx)
+    }
 }

@@ -27,13 +27,13 @@ pub struct TransferChildNftV2<'info> {
     pub parent_mint_account: Box<Account<'info, Mint>>,
     #[account(
         mut,
-        constraint = parent_of_children_meta.child_type == ChildType::NFT,
-        constraint = parent_of_children_meta.parent == parent_mint_account.key(),
-        constraint = parent_of_children_meta.child == child_mint_account.key(),
-        constraint = parent_of_children_meta.root == root_meta.key(),
-
+        constraint = children_meta_of_parent.child_type == ChildType::NFT,
+        constraint = children_meta_of_parent.parent == parent_mint_account.key(),
+        constraint = children_meta_of_parent.child == child_mint_account.key(),
+        constraint = children_meta_of_parent.root == root_meta.key(),
+        constraint = children_meta_of_parent.is_mutated == false,
     )]
-    pub parent_of_children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta_of_parent: Box<Account<'info, ChildrenMetadataV2>>,
     pub child_mint_account: Box<Account<'info, Mint>>,
     #[account(
         mut,
@@ -53,7 +53,7 @@ impl<'info> TransferChildNftV2<'info> {
     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
         let cpi_accounts = SetAuthority {
             account_or_mint: self.child_token_account.to_account_info(),
-            current_authority: self.parent_of_children_meta.to_account_info(),
+            current_authority: self.children_meta_of_parent.to_account_info(),
         };
 
         CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
@@ -85,13 +85,10 @@ pub fn handler(ctx: Context<TransferChildNftV2>, _bump: u8) -> Result<()> {
         Some(*ctx.accounts.receiver_account.key),
     )?;
 
-    // Delete parent of meta data pda account when it is not root meta data.
-    // if ctx.accounts.parent_of_children_meta.key() != ctx.accounts.root_meta.key() {
-    //     ctx.accounts
-    //         .parent_of_children_meta
-    //         .close(ctx.accounts.current_owner.to_account_info())?
-    // }
-    ctx.accounts.parent_of_children_meta.is_mutated = true;
+    // mark parent of meta data pda mutated account when it is not root meta data.
+    if ctx.accounts.children_meta_of_parent.key() != ctx.accounts.root_meta.key() {
+        ctx.accounts.children_meta_of_parent.is_mutated = true;
+    }
 
     Ok(())
 }
