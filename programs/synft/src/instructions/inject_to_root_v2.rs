@@ -1,8 +1,8 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED, ParentMetadata, PARENT_PDA_SEED};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
-// use std::mem::size_of;
+use std::mem::size_of;
 
 #[derive(Accounts)]
 pub struct InjectToRootV2<'info> {
@@ -36,7 +36,6 @@ pub struct InjectToRootV2<'info> {
     // #[account(
     //     init_if_needed, 
     //     payer = current_owner,
-    //     // space: 8 discriminator + 32 owner + 32 nft + 32*32 immediate_children
     //     space = 8 + size_of::<ParentMetadata>(),
     //     seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump
     // )]
@@ -65,6 +64,11 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, bump: u8) -> Resu
     ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
     ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
+
+
+    // ctx.accounts.parent_meta.immediate_children = [*ctx.accounts.child_mint_account.to_account_info().key, ];
+    // ctx.accounts.parent_meta.height = 1;
+
     token::set_authority(
         ctx.accounts.into_set_authority_context(), // use extended priviledge from current instruction for CPI
         AuthorityType::AccountOwner,

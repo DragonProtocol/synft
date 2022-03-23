@@ -7,6 +7,8 @@ pub const SYNTHETIC_NFT_MINT_SEED: &[u8] = b"synthetic-nft-mint-seed";
 pub const SYNTHETIC_NFT_ACOUNT_SEED: &[u8] = b"synthetic-nft-account-seed";
 pub const SOL_PDA_SEED: &[u8] = b"sol-seed";
 
+pub const PLACEHOLDER_PUBKEY: Pubkey = Pubkey::new_from_array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
+
 #[account]
 pub struct ChildrenMetadata {
     pub reversible: bool,
@@ -53,7 +55,8 @@ pub struct ParentMetadata {
     // pub nft: Pubkey,  // pointer to self mint
     pub bump: u8,
     pub is_burnt: bool,
-    // pub immediate_children: [Pubkey; 3], //pointer to immediate children
+    pub height: u8,
+    pub immediate_children: [Pubkey; 3], //pointer to immediate children
 }
 
 #[account]
