@@ -72,4 +72,6 @@ pub enum ErrorCode {
     InvalidExtractAttempt,
     #[msg("Wrong type of burn instruction for the token")]
     InvalidBurnType,
+    #[msg("Wrong opration of crank instruction for the token")]
+    InvalidTransferCrank
 }

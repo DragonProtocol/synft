@@ -92,10 +92,8 @@ pub fn handler(
     ctx.accounts.parent_meta.bump = parent_bump;
     for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
         if child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
-            if child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
-                *child = ctx.accounts.children_meta.child;
-                break;
-            }
+            *child = ctx.accounts.children_meta.child;
+            break;
         }
     }
 
