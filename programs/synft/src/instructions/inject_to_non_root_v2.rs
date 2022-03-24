@@ -57,6 +57,13 @@ pub struct InjectToNonRootV2<'info> {
         constraint = parent_meta.height < TREE_LEVEL_HEIGHT_LIMIT,
     )]
     pub parent_meta: Box<Account<'info, ParentMetadata>>,
+    #[account(
+        init, 
+        payer = current_owner,
+        space = 8 + size_of::<ParentMetadata>(),
+        seeds = [PARENT_PDA_SEED, child_mint_account.key().as_ref()], bump,
+    )]
+    pub parent_meta_of_child: Box<Account<'info, ParentMetadata>>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -87,9 +94,9 @@ pub fn handler(
     ctx.accounts.children_meta.root = *ctx.accounts.root_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
 
-    ctx.accounts.parent_meta.height += 1;
-    ctx.accounts.parent_meta.is_burnt = false;
-    ctx.accounts.parent_meta.bump = parent_bump;
+    ctx.accounts.parent_meta_of_child.height = ctx.accounts.parent_meta.height + 1;
+    ctx.accounts.parent_meta_of_child.is_burnt = false;
+    ctx.accounts.parent_meta_of_child.bump = parent_bump;
     for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
         if child.to_bytes() == Pubkey::default().to_bytes() {
             *child = ctx.accounts.children_meta.child;

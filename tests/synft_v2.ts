@@ -409,10 +409,18 @@ describe("synft v2", () => {
       ],
       program.programId
     );
+    const [_parent_of_child_pda, _parent_of_child_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+        mint1.toBuffer(),
+      ],
+      program.programId
+    );
     let initTx = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_1,
       _parent_bump,
+      _parent_of_child_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -422,6 +430,7 @@ describe("synft v2", () => {
           parentMintAccount: mint2,
           childrenMeta: _metadata_pda_2_1,
           parentMeta: _parent_pda,
+          parentMetaOfChild:_parent_of_child_pda,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -447,10 +456,18 @@ describe("synft v2", () => {
       ],
       program.programId
     );
+    const [_parent_of_child_pda1, _parent_of_child_bump1] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+        mint0.toBuffer(),
+      ],
+      program.programId
+    );
     let initTx1 = await program.rpc.injectToRootV2(
       true,
       _metadata_bump_2_0,
       _parent_bump,
+      _parent_of_child_bump1,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -460,6 +477,7 @@ describe("synft v2", () => {
           parentMintAccount: mint2,
           childrenMeta: _metadata_pda_2_0,
           parentMeta: _parent_pda,
+          parentMetaOfChild:_parent_of_child_pda1,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -500,10 +518,18 @@ describe("synft v2", () => {
       ],
       program.programId
     );
+    const [_nft4_parent_metadata_pda, _nft4_parent_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+        mint4.toBuffer(),
+      ],
+      program.programId
+    );
     let initTx1 = await program.rpc.injectToRootV2(
       true,
       _root_metadata_bump,
       _nft3_parent_metadata_bump,
+      _nft4_parent_metadata_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -513,6 +539,8 @@ describe("synft v2", () => {
           parentMintAccount: mint3,
           childrenMeta: _root_metadata_pda,
           parentMeta: _nft3_parent_metadata_pda,
+          parentMetaOfChild: _nft4_parent_metadata_pda,
+
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -529,17 +557,17 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    const [_nft4_parent_metadata_pda, _nft4_parent_metadata_bump] = await PublicKey.findProgramAddress(
+    const [_nft5_parent_metadata_pda, _nft5_parent_metadata_bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
-        mint4.toBuffer(),
+        mint5.toBuffer(),
       ],
       program.programId
     );
     let initTx2 = await program.rpc.injectToNonRootV2(
       true,
       _child_metadata_bump,
-      _nft4_parent_metadata_bump,
+      _nft5_parent_metadata_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -553,6 +581,8 @@ describe("synft v2", () => {
           childrenMetaOfParent: _root_metadata_pda,
           rootMeta: _root_metadata_pda,
           parentMeta: _nft4_parent_metadata_pda,
+          parentMetaOfChild: _nft5_parent_metadata_pda,
+
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -906,10 +936,17 @@ async function injectNonRoot(rootToken, rootMint, parentToken, parentMint, child
     ],
     program.programId
   );
+  const [_parent_metadata_of_child_pda, _parent_metadata_of_child_bump] = await PublicKey.findProgramAddress(
+    [
+      Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+      childMint.toBuffer(),
+    ],
+    program.programId
+  );
   let initTx2 = await program.rpc.injectToNonRootV2(
     true,
     _child_metadata_bump,
-    _parent_metadata_bump,
+    _parent_metadata_of_child_bump,
     {
       accounts: {
         currentOwner: user.publicKey,
@@ -923,6 +960,8 @@ async function injectNonRoot(rootToken, rootMint, parentToken, parentMint, child
         childrenMetaOfParent: _root_metadata_pda,
         rootMeta: _root_metadata_pda,
         parentMeta: _parent_metadata_pda,
+        parentMetaOfChild: _parent_metadata_of_child_pda,
+
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         tokenProgram: TOKEN_PROGRAM_ID,
@@ -933,7 +972,7 @@ async function injectNonRoot(rootToken, rootMint, parentToken, parentMint, child
 }
 
 async function injectRoot(parentToken, parentMint, childToken, childMint, program, user) {
-  const [_metadata_pda_11_12, _metadata_bump_11_12] = await PublicKey.findProgramAddress(
+  const [_metadata_pda, _metadata_bump] = await PublicKey.findProgramAddress(
     [
       Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
       parentMint.toBuffer(),
@@ -941,17 +980,25 @@ async function injectRoot(parentToken, parentMint, childToken, childMint, progra
     ],
     program.programId
   );
-  const [_parent_pda_11, _parent_bump_11] = await PublicKey.findProgramAddress(
+  const [_parent_meta_pda, _parent_meta_bump] = await PublicKey.findProgramAddress(
     [
       Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
       parentMint.toBuffer(),
     ],
     program.programId
   );
+  const [_parent_meta_of_child_pda, _parent_meta_of_child_bump] = await PublicKey.findProgramAddress(
+    [
+      Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+      childMint.toBuffer(),
+    ],
+    program.programId
+  );
   let initTx = await program.rpc.injectToRootV2(
     true,
-    _metadata_bump_11_12,
-    _parent_bump_11,
+    _metadata_bump,
+    _parent_meta_bump,
+    _parent_meta_of_child_bump,
     {
       accounts: {
         currentOwner: user.publicKey,
@@ -959,8 +1006,9 @@ async function injectRoot(parentToken, parentMint, childToken, childMint, progra
         childMintAccount: childMint,
         parentTokenAccount: parentToken.address,
         parentMintAccount: parentMint,
-        childrenMeta: _metadata_pda_11_12,
-        parentMeta: _parent_pda_11,
+        childrenMeta: _metadata_pda,
+        parentMeta: _parent_meta_pda,
+        parentMetaOfChild: _parent_meta_of_child_pda,
 
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,

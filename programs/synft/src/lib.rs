@@ -68,10 +68,17 @@ pub mod synft {
     pub fn inject_to_root_v2(
         ctx: Context<InjectToRootV2>,
         is_mutable: bool,
-        child_bump: u8,
-        parent_bump: u8,
+        child_meta_bump: u8,
+        parent_mata_bump: u8,
+        parent_mata_of_child_bump: u8,
     ) -> Result<()> {
-        instructions::inject_to_root_v2::handler(ctx, is_mutable, child_bump, parent_bump)
+        instructions::inject_to_root_v2::handler(
+            ctx,
+            is_mutable,
+            child_meta_bump,
+            parent_mata_bump,
+            parent_mata_of_child_bump,
+        )
     }
 
     pub fn inject_to_non_root_v2(
