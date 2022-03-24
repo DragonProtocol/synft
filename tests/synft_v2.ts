@@ -587,25 +587,25 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    const [_parent_meta_pda, _parent_metadata_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        mint4.toBuffer(),
-        mint5.toBuffer(),
-      ],
-      program.programId
-    );
+    // const [_parent_meta_pda, _parent_metadata_bump] = await PublicKey.findProgramAddress(
+    //   [
+    //     Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+    //     mint4.toBuffer(),
+    //     mint5.toBuffer(),
+    //   ],
+    //   program.programId
+    // );
 
-    let initTx = await program.rpc.transferChildNftV2(_parent_metadata_bump,
+    let initTx = await program.rpc.transferChildNftV2(_root_metadata_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
-          childTokenAccount: tokenAccount5.address,
-          childMintAccount: mint5,
+          childTokenAccount: tokenAccount4.address,
+          childMintAccount: mint4,
           rootTokenAccount: tokenAccount3.address,
           rootMintAccount: mint3,
-          childrenMetaOfParent: _parent_meta_pda,
-          parentMintAccount: mint4,
+          childrenMetaOfParent: _root_metadata_pda,
+          parentMintAccount: mint3,
           rootMeta: _root_metadata_pda,
           receiverAccount: user2.publicKey,
 
@@ -616,15 +616,15 @@ describe("synft v2", () => {
         signers: [user1],
       }
     );
-
+    
     let rootMeta = await program.account.childrenMetadataV2.fetchNullable(
       _root_metadata_pda
     );
     assert.isOk(rootMeta.isMutated == true);
-    let parentMeta = await program.account.childrenMetadataV2.fetchNullable(
-      _parent_meta_pda
-    );
-    assert.isOk(parentMeta.isMutated == true);
+    // let parentMeta = await program.account.childrenMetadataV2.fetchNullable(
+    //   _parent_meta_pda
+    // );
+    // assert.isOk(parentMeta.isMutated == true);
   });
 
   /**

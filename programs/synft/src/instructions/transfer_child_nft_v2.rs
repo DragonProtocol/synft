@@ -85,10 +85,7 @@ pub fn handler(ctx: Context<TransferChildNftV2>, _bump: u8) -> Result<()> {
         Some(*ctx.accounts.receiver_account.key),
     )?;
 
-    // mark parent of meta data pda mutated account when it is not root meta data.
-    if ctx.accounts.children_meta_of_parent.key() != ctx.accounts.root_meta.key() {
-        ctx.accounts.children_meta_of_parent.is_mutated = true;
-    }
-
+    ctx.accounts.root_meta.is_mutated = true;
+    ctx.accounts.children_meta_of_parent.is_mutated = true;
     Ok(())
 }
