@@ -794,305 +794,47 @@ describe("synft v2", () => {
 
   it("Build a tree with the most nfts", async () => {
     let connection = anchor.getProvider().connection;
-    mint11 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint12 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint13 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint14 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint15 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint16 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint17 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint18 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint19 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint20 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint21 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint22 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    mint23 = await createMint(
-      anchor.getProvider().connection,
-      payer,
-      mintAuthority.publicKey,
-      mintAuthority.publicKey,
-      0
-    );
-    tokenAccount11 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint11,
-      user1.publicKey,
-      true
-    );
-    tokenAccount12 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint12,
-      user1.publicKey,
-      true
-    );
-    tokenAccount13 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint13,
-      user1.publicKey,
-      true
-    );
-    tokenAccount14 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint14,
-      user1.publicKey,
-      true
-    );
-    tokenAccount15 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint15,
-      user1.publicKey,
-      true
-    );
-    tokenAccount16 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint16,
-      user1.publicKey,
-      true
-    );
-    tokenAccount17 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint17,
-      user1.publicKey,
-      true
-    );
-    tokenAccount18 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint18,
-      user1.publicKey,
-      true
-    );
-    tokenAccount19 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint19,
-      user1.publicKey,
-      true
-    );
-    tokenAccount20 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint20,
-      user1.publicKey,
-      true
-    );
-    tokenAccount21 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint21,
-      user1.publicKey,
-      true
-    );
-    tokenAccount22 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint22,
-      user1.publicKey,
-      true
-    );
-    tokenAccount23 = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
-      mint23,
-      user1.publicKey,
-      true
-    );
-    let signature11 = await mintTo(
-      connection,
-      payer,
-      mint11,
-      tokenAccount11.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature12 = await mintTo(
-      connection,
-      payer,
-      mint12,
-      tokenAccount12.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature13 = await mintTo(
-      connection,
-      payer,
-      mint13,
-      tokenAccount13.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature14 = await mintTo(
-      connection,
-      payer,
-      mint14,
-      tokenAccount14.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature15 = await mintTo(
-      connection,
-      payer,
-      mint15,
-      tokenAccount15.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature16 = await mintTo(
-      connection,
-      payer,
-      mint16,
-      tokenAccount16.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature17 = await mintTo(
-      connection,
-      payer,
-      mint17,
-      tokenAccount17.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature18 = await mintTo(
-      connection,
-      payer,
-      mint18,
-      tokenAccount18.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature19 = await mintTo(
-      connection,
-      payer,
-      mint19,
-      tokenAccount19.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature20 = await mintTo(
-      connection,
-      payer,
-      mint20,
-      tokenAccount20.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature21 = await mintTo(
-      connection,
-      payer,
-      mint21,
-      tokenAccount21.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature22 = await mintTo(
-      connection,
-      payer,
-      mint22,
-      tokenAccount22.address,
-      mintAuthority,
-      1,
-      []
-    );
-    let signature23 = await mintTo(
-      connection,
-      payer,
-      mint23,
-      tokenAccount23.address,
-      mintAuthority,
-      1,
-      []
-    ); 
+    mint11 = await _createMint(payer, mintAuthority);
+    mint12 = await _createMint(payer, mintAuthority);
+    mint13 = await _createMint(payer, mintAuthority);
+    mint14 = await _createMint(payer, mintAuthority);
+    mint15 = await _createMint(payer, mintAuthority);
+    mint16 = await _createMint(payer, mintAuthority);
+    mint17 = await _createMint(payer, mintAuthority);
+    mint18 = await _createMint(payer, mintAuthority);
+    mint19 = await _createMint(payer, mintAuthority);
+    mint20 = await _createMint(payer, mintAuthority);
+    mint21 = await _createMint(payer, mintAuthority);
+    mint22 = await _createMint(payer, mintAuthority);
+    mint23 = await _createMint(payer, mintAuthority);
+    
+    tokenAccount11 = await _getOrCreateAssociatedTokenAccount(payer, mint11, user1);
+    tokenAccount12 = await _getOrCreateAssociatedTokenAccount(payer, mint12, user1);
+    tokenAccount13 = await _getOrCreateAssociatedTokenAccount(payer, mint13, user1);
+    tokenAccount14 = await _getOrCreateAssociatedTokenAccount(payer, mint14, user1);
+    tokenAccount15 = await _getOrCreateAssociatedTokenAccount(payer, mint15, user1);
+    tokenAccount16 = await _getOrCreateAssociatedTokenAccount(payer, mint16, user1);
+    tokenAccount17 = await _getOrCreateAssociatedTokenAccount(payer, mint17, user1);
+    tokenAccount18 = await _getOrCreateAssociatedTokenAccount(payer, mint18, user1);
+    tokenAccount19 = await _getOrCreateAssociatedTokenAccount(payer, mint19, user1);
+    tokenAccount20 = await _getOrCreateAssociatedTokenAccount(payer, mint20, user1);
+    tokenAccount21 = await _getOrCreateAssociatedTokenAccount(payer, mint21, user1);
+    tokenAccount22 = await _getOrCreateAssociatedTokenAccount(payer, mint22, user1);
+    tokenAccount23 = await _getOrCreateAssociatedTokenAccount(payer, mint23, user1);
+
+    await _mintTo(payer, mint11,tokenAccount11,mintAuthority,1);
+    await _mintTo(payer, mint12,tokenAccount12,mintAuthority,1);
+    await _mintTo(payer, mint13,tokenAccount13,mintAuthority,1);
+    await _mintTo(payer, mint14,tokenAccount14,mintAuthority,1);
+    await _mintTo(payer, mint15,tokenAccount15,mintAuthority,1);
+    await _mintTo(payer, mint16,tokenAccount16,mintAuthority,1);
+    await _mintTo(payer, mint17,tokenAccount17,mintAuthority,1);
+    await _mintTo(payer, mint18,tokenAccount18,mintAuthority,1);
+    await _mintTo(payer, mint19,tokenAccount19,mintAuthority,1);
+    await _mintTo(payer, mint20,tokenAccount20,mintAuthority,1);
+    await _mintTo(payer, mint21,tokenAccount21,mintAuthority,1);
+    await _mintTo(payer, mint22,tokenAccount22,mintAuthority,1);
+    await _mintTo(payer, mint23,tokenAccount23,mintAuthority,1);
 
     await injectRoot(tokenAccount11, mint11, tokenAccount12, mint12, program, user1);
     await injectRoot(tokenAccount11, mint11, tokenAccount13, mint13, program, user1);
@@ -1108,6 +850,37 @@ describe("synft v2", () => {
     await injectNonRoot(tokenAccount11, mint11, tokenAccount14, mint14, tokenAccount23, mint23, program, user1);
   });
 });
+
+async function _mintTo(payer, mint, tokenAccount, mintAuthority, amount) {
+   await mintTo(
+    anchor.getProvider().connection,
+    payer,
+    mint,
+    tokenAccount.address,
+    mintAuthority,
+    amount,
+    []
+  );
+}
+async function _getOrCreateAssociatedTokenAccount(payer, mint, user) {
+  return await getOrCreateAssociatedTokenAccount(
+    anchor.getProvider().connection,
+    payer,
+    mint,
+    user.publicKey,
+    true
+  );
+}
+
+async function _createMint(payer, mintAuthority) {
+   return await createMint(
+    anchor.getProvider().connection,
+    payer,
+    mintAuthority.publicKey,
+    mintAuthority.publicKey,
+    0
+  );
+}
 
 async function injectNonRoot(rootToken, rootMint, parentToken, parentMint, childToken, childMint, program, user) {
   const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
