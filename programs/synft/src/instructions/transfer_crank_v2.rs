@@ -99,7 +99,7 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
         return init(ctx);
     }
 
-    //2. process non-leaf
+    //2. process
     let mut is_in_processed_children: bool = false;
     for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
         if not_processed_child.to_bytes()
@@ -116,10 +116,11 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     ctx.accounts.parent_meta.height = ctx.accounts.parent_meta_of_parent.height + 1;
     ctx.accounts.children_meta_of_parent.is_mutated = false;
     ctx.accounts.children_meta.is_mutated = true;
-    //3. process leaf
-    let mut is_leaf: bool = false;
-    for immediate_child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
-        if immediate_child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
+    //2.1 process leaf or non-leaf
+    let mut is_leaf: bool = true;
+    for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
+        // TODO need to verify by default public key
+        if immediate_child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
             is_leaf = false;
             break;
         }
@@ -143,7 +144,7 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
             }
         }
     }
-    //4.end
+    //3.end
     let mut is_processed_children_empty: bool = true;
     for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
         if not_processed_child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
