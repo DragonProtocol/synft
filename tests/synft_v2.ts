@@ -100,6 +100,35 @@ describe("synft v2", () => {
   let tokenAccount7 = null as Account;
   let tokenAccount8 = null as Account;
 
+    
+  let mint11 = null as PublicKey;
+  let mint12 = null as PublicKey;
+  let mint13 = null as PublicKey;
+  let mint14 = null as PublicKey;
+  let mint15 = null as PublicKey;
+  let mint16 = null as PublicKey;
+  let mint17 = null as PublicKey;
+  let mint18 = null as PublicKey;
+  let mint19 = null as PublicKey;
+  let mint20 = null as PublicKey;
+  let mint21 = null as PublicKey;
+  let mint22 = null as PublicKey;
+  let mint23 = null as PublicKey;
+  let tokenAccount11 = null as Account;
+  let tokenAccount12 = null as Account;
+  let tokenAccount13 = null as Account;
+  let tokenAccount14 = null as Account;
+  let tokenAccount15 = null as Account;
+  let tokenAccount16 = null as Account;
+  let tokenAccount17 = null as Account;
+  let tokenAccount18 = null as Account;
+  let tokenAccount19 = null as Account;
+  let tokenAccount20 = null as Account;
+  let tokenAccount21 = null as Account;
+  let tokenAccount22 = null as Account;
+  let tokenAccount23 = null as Account;
+
+
   it("Is initialized!", async () => {
     let connection = anchor.getProvider().connection;
     await anchor
@@ -660,23 +689,20 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
-        mint2.toBuffer(),
-        mint1.toBuffer(),
-      ],
-      program.programId
-    );
+    // const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
+    //   [
+    //     Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+    //     mint2.toBuffer(),
+    //     mint1.toBuffer(),
+    //   ],
+    //   program.programId
+    // );
     getAccount(connection, _sol_pda); // account exists
     let extractTx = await program.rpc.extractSolV2(_sol_bump, {
       accounts: {
         currentOwner: user1.publicKey,
-        rootTokenAccount: tokenAccount2.address,
-        rootMintAccount: tokenAccount2.mint,
         parentTokenAccount: tokenAccount2.address,
         parentMintAccount: tokenAccount2.mint,
-        rootMeta: _root_metadata_pda,
         solAccount: _sol_pda,
 
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -765,4 +791,350 @@ describe("synft v2", () => {
     assert.ok(solAccountAfter === null);
   });
 
+
+  it("Build a tree with the most nfts", async () => {
+    let connection = anchor.getProvider().connection;
+    mint11 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint12 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint13 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint14 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint15 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint16 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint17 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint18 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint19 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint20 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint21 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint22 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    mint23 = await createMint(
+      anchor.getProvider().connection,
+      payer,
+      mintAuthority.publicKey,
+      mintAuthority.publicKey,
+      0
+    );
+    tokenAccount11 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint11,
+      user1.publicKey,
+      true
+    );
+    tokenAccount12 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint12,
+      user1.publicKey,
+      true
+    );
+    tokenAccount13 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint13,
+      user1.publicKey,
+      true
+    );
+    tokenAccount14 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint14,
+      user1.publicKey,
+      true
+    );
+    tokenAccount15 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint15,
+      user1.publicKey,
+      true
+    );
+    tokenAccount16 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint16,
+      user1.publicKey,
+      true
+    );
+    tokenAccount17 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint17,
+      user1.publicKey,
+      true
+    );
+    tokenAccount18 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint18,
+      user1.publicKey,
+      true
+    );
+    tokenAccount19 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint19,
+      user1.publicKey,
+      true
+    );
+    tokenAccount20 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint16,
+      user1.publicKey,
+      true
+    );
+    tokenAccount21 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint21,
+      user1.publicKey,
+      true
+    );
+    tokenAccount22 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint22,
+      user1.publicKey,
+      true
+    );
+    tokenAccount23 = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint22,
+      user1.publicKey,
+      true
+    );
+    let signature11 = await mintTo(
+      connection,
+      payer,
+      mint11,
+      tokenAccount11.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature12 = await mintTo(
+      connection,
+      payer,
+      mint12,
+      tokenAccount12.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature13 = await mintTo(
+      connection,
+      payer,
+      mint13,
+      tokenAccount13.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature14 = await mintTo(
+      connection,
+      payer,
+      mint14,
+      tokenAccount14.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature15 = await mintTo(
+      connection,
+      payer,
+      mint15,
+      tokenAccount15.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature16 = await mintTo(
+      connection,
+      payer,
+      mint16,
+      tokenAccount16.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature17 = await mintTo(
+      connection,
+      payer,
+      mint17,
+      tokenAccount17.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature18 = await mintTo(
+      connection,
+      payer,
+      mint18,
+      tokenAccount18.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature19 = await mintTo(
+      connection,
+      payer,
+      mint19,
+      tokenAccount19.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature20 = await mintTo(
+      connection,
+      payer,
+      mint20,
+      tokenAccount20.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature21 = await mintTo(
+      connection,
+      payer,
+      mint21,
+      tokenAccount21.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature22 = await mintTo(
+      connection,
+      payer,
+      mint22,
+      tokenAccount22.address,
+      mintAuthority,
+      1,
+      []
+    );
+    let signature23 = await mintTo(
+      connection,
+      payer,
+      mint23,
+      tokenAccount23.address,
+      mintAuthority,
+      1,
+      []
+    );
+
+      // Inject nft1 to  nft2
+      const [_metadata_pda_11_12, _metadata_bump_11_12] = await PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+          mint11.toBuffer(),
+          mint12.toBuffer(),
+        ],
+        program.programId
+      );
+      const [_parent_pda_11, _parent_bump_11] = await PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+          mint11.toBuffer(),
+        ],
+        program.programId
+      );
+      // let initTx = await program.rpc.injectToRootV2(
+      //   true,
+      //   _metadata_bump_11_12,
+      //   _parent_bump_11,
+      //   {
+      //     accounts: {
+      //       currentOwner: user1.publicKey,
+      //       childTokenAccount: tokenAccount1.address,
+      //       childMintAccount: mint1,
+      //       parentTokenAccount: tokenAccount2.address,
+      //       parentMintAccount: mint2,
+      //       childrenMeta: _metadata_pda_2_1,
+      //       parentMeta: _parent_pda,
+  
+      //       systemProgram: anchor.web3.SystemProgram.programId,
+      //       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      //       tokenProgram: TOKEN_PROGRAM_ID,
+      //     },
+      //     signers: [user1],
+      //   }
+      // );
+      // // volidate metadata
+      // let childrenMeta = await program.account.childrenMetadataV2.fetch(
+      //   _metadata_pda_2_1
+      // );
+
+  });
 });
