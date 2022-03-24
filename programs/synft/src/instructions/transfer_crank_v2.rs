@@ -91,8 +91,8 @@ pub struct TransferCrank<'info> {
 pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     //1.init
     let mut is_crank_meta_inited: bool = false;
-    for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
-        if child.to_bytes() != Pubkey::default().to_bytes() {
+    for child in ctx.accounts.parent_meta.immediate_children.iter() {
+        if !child.eq(&Pubkey::default()) {
             is_crank_meta_inited = true;
             break;
         }
@@ -104,8 +104,8 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
         ctx.accounts.crank_meta.old_root_meta_data = *ctx.accounts.root_meta.to_account_info().key;
         ctx.accounts.crank_meta.new_root_meta_data =
             *ctx.accounts.children_meta.to_account_info().key;
-        for immediate_child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
-            if immediate_child.to_bytes() != Pubkey::default().to_bytes() {
+        for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
+            if !immediate_child.eq(&Pubkey::default()) {
                 for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut()
                 {
                     if not_processed_child.to_bytes() == Pubkey::default().to_bytes() {
@@ -134,15 +134,11 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     }
 
     //2. process
-    let mut is_in_processed_children: bool = false;
-    for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
-        if not_processed_child.to_bytes()
-            == ctx.accounts.children_meta.to_account_info().key.to_bytes()
-        {
-            is_in_processed_children = true;
-            break;
-        }
-    }
+    let is_in_processed_children: bool = ctx
+        .accounts
+        .crank_meta
+        .not_processed_children
+        .contains(&ctx.accounts.children_meta.to_account_info().key);
     if !is_in_processed_children {
         return err!(ErrorCode::InvalidTransferCrank);
     }
@@ -153,7 +149,7 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     //2.1 process leaf or non-leaf
     let mut is_leaf: bool = true;
     for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
-        if immediate_child.to_bytes() != Pubkey::default().to_bytes() {
+        if immediate_child.eq(&Pubkey::default()) {
             is_leaf = false;
             break;
         }
@@ -166,8 +162,8 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
             .parent_meta
             .close(ctx.accounts.operator.to_account_info())?;
     } else {
-        for immediate_child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
-            if immediate_child.to_bytes() != Pubkey::default().to_bytes() {
+        for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
+            if !immediate_child.eq(&Pubkey::default()) {
                 for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut()
                 {
                     if not_processed_child.to_bytes() == Pubkey::default().to_bytes() {
@@ -179,8 +175,8 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     }
     //3.end
     let mut is_processed_children_empty: bool = true;
-    for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
-        if not_processed_child.to_bytes() != Pubkey::default().to_bytes() {
+    for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter() {
+        if !not_processed_child.eq(&Pubkey::default()) {
             is_processed_children_empty = false;
             break;
         }
