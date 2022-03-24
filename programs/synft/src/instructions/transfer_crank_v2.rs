@@ -89,10 +89,10 @@ pub struct TransferCrank<'info> {
 pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     // TODO
     //1.init 判断是否是crank_meta init
-    let mut is_crank_meta_inited: bool = true;
+    let mut is_crank_meta_inited: bool = false;
     for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
         if child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
-            is_crank_meta_inited = false;
+            is_crank_meta_inited = true;
             break;
         }
     }
@@ -103,8 +103,7 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
         ctx.accounts.children_meta.is_mutated = false;
         // b 设置crank_meta 属性数据
         ctx.accounts.crank_meta.old_root_meta_data = *ctx.accounts.root_meta.to_account_info().key;
-        ctx.accounts.crank_meta.new_root_meta_data =
-            *ctx.accounts.children_meta.to_account_info().key;
+        ctx.accounts.crank_meta.new_root_meta_data = *ctx.accounts.children_meta.to_account_info().key;
         ctx.accounts.crank_meta.not_processed_children = [PLACEHOLDER_PUBKEY; 32];
         for immediate_child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
             if immediate_child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
