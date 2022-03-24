@@ -72,7 +72,12 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, child_meta_bump: 
     ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
 
-    ctx.accounts.parent_meta.immediate_children = [*ctx.accounts.child_mint_account.to_account_info().key, Pubkey::default(), Pubkey::default()];
+    for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
+        if child.to_bytes() == Pubkey::default().to_bytes() {
+            *child = *ctx.accounts.child_mint_account.to_account_info().key;
+            break;
+        }
+    }
     ctx.accounts.parent_meta.height = 1;
     ctx.accounts.parent_meta.is_burnt = false;
     ctx.accounts.parent_meta.bump = parent_mata_bump;

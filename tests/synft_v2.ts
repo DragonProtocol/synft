@@ -493,6 +493,12 @@ describe("synft v2", () => {
     assert.ok(childrenMeta_2_0.isMutable == true);
     assert.ok(childrenMeta_2_0.bump == _metadata_bump_2_0);
     assert.ok(childrenMeta_2_0.child.toString() == mint0.toString());
+
+    let parentMeta = await program.account.parentMetadata.fetch(
+      _parent_pda
+    );
+    assert.ok(parentMeta.immediateChildren[0].toString(), mint1.toString());
+    assert.ok(parentMeta.immediateChildren[1].toString(), mint0.toString());
   });
 
   // Inject nft4 to nft3,  inject nft5 to  nft4
@@ -597,6 +603,12 @@ describe("synft v2", () => {
     assert.ok(childrenMeta.isMutable == true);
     assert.ok(childrenMeta.bump == _child_metadata_bump);
     assert.ok(childrenMeta.child.toString() == mint5.toString());
+
+
+    let parentMetaNft5 = await program.account.parentMetadata.fetch(
+      _nft5_parent_metadata_pda
+    );
+    assert.ok(parentMetaNft5.height==3);
   });
 
   // Transfer NFT, transfer out nft5 to user2
