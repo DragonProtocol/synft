@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT, PLACEHOLDER_PUBKEY};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
@@ -91,7 +91,7 @@ pub fn handler(
     ctx.accounts.parent_meta.is_burnt = false;
     ctx.accounts.parent_meta.bump = parent_bump;
     for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
-        if child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
+        if child.to_bytes() == Pubkey::default().to_bytes() {
             *child = ctx.accounts.children_meta.child;
             break;
         }

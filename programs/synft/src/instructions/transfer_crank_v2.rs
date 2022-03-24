@@ -1,6 +1,6 @@
 use crate::state::metadata::{
     ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata, CHILDREN_PDA_SEED,
-    CRANK_PDA_SEED, PARENT_PDA_SEED, PLACEHOLDER_PUBKEY,
+    CRANK_PDA_SEED, PARENT_PDA_SEED,
 };
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
@@ -90,7 +90,7 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     //1.init
     let mut is_crank_meta_inited: bool = false;
     for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
-        if child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
+        if child.to_bytes() != Pubkey::default().to_bytes() {
             is_crank_meta_inited = true;
             break;
         }
@@ -120,7 +120,7 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     let mut is_leaf: bool = true;
     for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
         // TODO need to verify by default public key
-        if immediate_child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
+        if immediate_child.to_bytes() != Pubkey::default().to_bytes() {
             is_leaf = false;
             break;
         }
@@ -134,10 +134,10 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
             .close(ctx.accounts.operator.to_account_info())?;
     } else {
         for immediate_child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
-            if immediate_child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
+            if immediate_child.to_bytes() != Pubkey::default().to_bytes() {
                 for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut()
                 {
-                    if not_processed_child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
+                    if not_processed_child.to_bytes() == Pubkey::default().to_bytes() {
                         *not_processed_child = immediate_child.clone();
                     }
                 }
@@ -147,7 +147,7 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
     //3.end
     let mut is_processed_children_empty: bool = true;
     for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
-        if not_processed_child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
+        if not_processed_child.to_bytes() != Pubkey::default().to_bytes() {
             is_processed_children_empty = false;
             break;
         }
@@ -167,11 +167,10 @@ fn init(ctx: Context<TransferCrank>) -> Result<()> {
     ctx.accounts.children_meta.is_mutated = false;
     ctx.accounts.crank_meta.old_root_meta_data = *ctx.accounts.root_meta.to_account_info().key;
     ctx.accounts.crank_meta.new_root_meta_data = *ctx.accounts.children_meta.to_account_info().key;
-    ctx.accounts.crank_meta.not_processed_children = [PLACEHOLDER_PUBKEY; 32];
     for immediate_child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
-        if immediate_child.to_bytes() != PLACEHOLDER_PUBKEY.to_bytes() {
+        if immediate_child.to_bytes() != Pubkey::default().to_bytes() {
             for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
-                if not_processed_child.to_bytes() == PLACEHOLDER_PUBKEY.to_bytes() {
+                if not_processed_child.to_bytes() == Pubkey::default().to_bytes() {
                     *not_processed_child = immediate_child.clone();
                 }
             }
@@ -190,7 +189,7 @@ fn init(ctx: Context<TransferCrank>) -> Result<()> {
         if immediate_child.to_bytes()
             != (*ctx.accounts.child_mint_account.to_account_info().key).to_bytes()
         {
-            *immediate_child = PLACEHOLDER_PUBKEY.clone();
+            *immediate_child = Pubkey::default().clone();
         }
     }
     return Ok(());

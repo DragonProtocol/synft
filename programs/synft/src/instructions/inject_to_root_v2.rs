@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED, ParentMetadata, PARENT_PDA_SEED, PLACEHOLDER_PUBKEY};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED, ParentMetadata, PARENT_PDA_SEED};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
@@ -64,7 +64,7 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, child_bump: u8, p
     ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
     ctx.accounts.children_meta.child_type = ChildType::NFT;
 
-    ctx.accounts.parent_meta.immediate_children = [*ctx.accounts.child_mint_account.to_account_info().key, PLACEHOLDER_PUBKEY, PLACEHOLDER_PUBKEY];
+    ctx.accounts.parent_meta.immediate_children = [*ctx.accounts.child_mint_account.to_account_info().key, Pubkey::default(), Pubkey::default()];
     ctx.accounts.parent_meta.height = 1;
     ctx.accounts.parent_meta.is_burnt = false;
     ctx.accounts.parent_meta.bump = parent_bump;

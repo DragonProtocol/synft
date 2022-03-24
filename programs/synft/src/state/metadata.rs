@@ -9,8 +9,6 @@ pub const SOL_PDA_SEED: &[u8] = b"sol-seed";
 pub const CRANK_PDA_SEED: &[u8] = b"crank-pda-seed";
 pub const TREE_LEVEL_HEIGHT_LIMIT: u8 = 3;
 
-pub const PLACEHOLDER_PUBKEY: Pubkey = Pubkey::new_from_array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-
 #[account]
 pub struct ChildrenMetadata {
     pub reversible: bool,
