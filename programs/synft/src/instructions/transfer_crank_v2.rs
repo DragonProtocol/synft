@@ -45,12 +45,14 @@ pub struct TransferCrank<'info> {
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
+        mut,
         constraint = children_meta_of_parent.root != parent_mint_account.key(),
         constraint = children_meta_of_parent.root == root_meta.key(),
         constraint = children_meta_of_parent.is_mutated == true,
     )]
     pub children_meta_of_parent: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
+         mut,
         constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
         constraint = root_meta.is_mutated == true,
