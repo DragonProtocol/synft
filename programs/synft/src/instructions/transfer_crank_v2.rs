@@ -40,24 +40,24 @@ pub struct TransferCrank<'info> {
         payer = operator,
         space = 8 + size_of::<ChildrenMetadataV2>(),
         seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump,
-        constraint = children_meta.root == root_meta.key(),
+        constraint = children_meta.root == children_meta_of_root.key(),
         constraint = children_meta_of_parent.is_mutated == false,
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
         mut,
         constraint = children_meta_of_parent.root != parent_mint_account.key(),
-        constraint = children_meta_of_parent.root == root_meta.key(),
+        constraint = children_meta_of_parent.root == children_meta_of_root.key(),
         constraint = children_meta_of_parent.is_mutated == true,
     )]
     pub children_meta_of_parent: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
-         mut,
-        constraint = root_meta.root == root_meta.key(),
-        constraint = root_meta.is_mutable == true,
-        constraint = root_meta.is_mutated == true,
+        mut,
+        constraint = children_meta_of_root.root == children_meta_of_root.key(),
+        constraint = children_meta_of_root.is_mutable == true,
+        constraint = children_meta_of_root.is_mutated == true,
     )]
-    pub root_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta_of_root: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
         init_if_needed,
         payer = operator,
@@ -101,7 +101,8 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
         ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
         ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
         ctx.accounts.children_meta.is_mutated = false;
-        ctx.accounts.crank_meta.old_root_meta_data = *ctx.accounts.root_meta.to_account_info().key;
+        ctx.accounts.crank_meta.old_root_meta_data =
+            *ctx.accounts.children_meta_of_root.to_account_info().key;
         ctx.accounts.crank_meta.new_root_meta_data =
             *ctx.accounts.children_meta.to_account_info().key;
         for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
@@ -182,7 +183,7 @@ pub fn handler(ctx: Context<TransferCrank>) -> Result<()> {
         }
     }
     if is_processed_children_empty {
-        ctx.accounts.root_meta.is_mutated = false;
+        ctx.accounts.children_meta_of_root.is_mutated = false;
         ctx.accounts
             .crank_meta
             .close(ctx.accounts.operator.to_account_info())?;
