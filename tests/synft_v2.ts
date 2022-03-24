@@ -128,7 +128,6 @@ describe("synft v2", () => {
   let tokenAccount22 = null as Account;
   let tokenAccount23 = null as Account;
 
-
   it("Is initialized!", async () => {
     let connection = anchor.getProvider().connection;
     await anchor
@@ -430,7 +429,7 @@ describe("synft v2", () => {
           parentMintAccount: mint2,
           childrenMeta: _metadata_pda_2_1,
           parentMeta: _parent_pda,
-          parentMetaOfChild:_parent_of_child_pda,
+          parentMetaOfChild: _parent_of_child_pda,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -477,7 +476,7 @@ describe("synft v2", () => {
           parentMintAccount: mint2,
           childrenMeta: _metadata_pda_2_0,
           parentMeta: _parent_pda,
-          parentMetaOfChild:_parent_of_child_pda1,
+          parentMetaOfChild: _parent_of_child_pda1,
 
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -608,7 +607,7 @@ describe("synft v2", () => {
     let parentMetaNft5 = await program.account.parentMetadata.fetch(
       _nft5_parent_metadata_pda
     );
-    assert.ok(parentMetaNft5.height==3);
+    assert.ok(parentMetaNft5.height == 3);
   });
 
   // Transfer NFT, transfer out nft5 to user2
@@ -658,7 +657,7 @@ describe("synft v2", () => {
         signers: [user1],
       }
     );
-    
+
     let rootMeta = await program.account.childrenMetadataV2.fetchNullable(
       _root_metadata_pda
     );
@@ -833,9 +832,7 @@ describe("synft v2", () => {
     assert.ok(solAccountAfter === null);
   });
 
-
-  it("Build a tree with the most nfts", async () => {
-    let connection = anchor.getProvider().connection;
+  it("Initialize a tree with the most nfts", async () => {
     mint11 = await _createMint(payer, mintAuthority);
     mint12 = await _createMint(payer, mintAuthority);
     mint13 = await _createMint(payer, mintAuthority);
@@ -849,7 +846,7 @@ describe("synft v2", () => {
     mint21 = await _createMint(payer, mintAuthority);
     mint22 = await _createMint(payer, mintAuthority);
     mint23 = await _createMint(payer, mintAuthority);
-    
+
     tokenAccount11 = await _getOrCreateAssociatedTokenAccount(payer, mint11, user1);
     tokenAccount12 = await _getOrCreateAssociatedTokenAccount(payer, mint12, user1);
     tokenAccount13 = await _getOrCreateAssociatedTokenAccount(payer, mint13, user1);
@@ -864,19 +861,19 @@ describe("synft v2", () => {
     tokenAccount22 = await _getOrCreateAssociatedTokenAccount(payer, mint22, user1);
     tokenAccount23 = await _getOrCreateAssociatedTokenAccount(payer, mint23, user1);
 
-    await _mintTo(payer, mint11,tokenAccount11,mintAuthority,1);
-    await _mintTo(payer, mint12,tokenAccount12,mintAuthority,1);
-    await _mintTo(payer, mint13,tokenAccount13,mintAuthority,1);
-    await _mintTo(payer, mint14,tokenAccount14,mintAuthority,1);
-    await _mintTo(payer, mint15,tokenAccount15,mintAuthority,1);
-    await _mintTo(payer, mint16,tokenAccount16,mintAuthority,1);
-    await _mintTo(payer, mint17,tokenAccount17,mintAuthority,1);
-    await _mintTo(payer, mint18,tokenAccount18,mintAuthority,1);
-    await _mintTo(payer, mint19,tokenAccount19,mintAuthority,1);
-    await _mintTo(payer, mint20,tokenAccount20,mintAuthority,1);
-    await _mintTo(payer, mint21,tokenAccount21,mintAuthority,1);
-    await _mintTo(payer, mint22,tokenAccount22,mintAuthority,1);
-    await _mintTo(payer, mint23,tokenAccount23,mintAuthority,1);
+    await _mintTo(payer, mint11, tokenAccount11, mintAuthority, 1);
+    await _mintTo(payer, mint12, tokenAccount12, mintAuthority, 1);
+    await _mintTo(payer, mint13, tokenAccount13, mintAuthority, 1);
+    await _mintTo(payer, mint14, tokenAccount14, mintAuthority, 1);
+    await _mintTo(payer, mint15, tokenAccount15, mintAuthority, 1);
+    await _mintTo(payer, mint16, tokenAccount16, mintAuthority, 1);
+    await _mintTo(payer, mint17, tokenAccount17, mintAuthority, 1);
+    await _mintTo(payer, mint18, tokenAccount18, mintAuthority, 1);
+    await _mintTo(payer, mint19, tokenAccount19, mintAuthority, 1);
+    await _mintTo(payer, mint20, tokenAccount20, mintAuthority, 1);
+    await _mintTo(payer, mint21, tokenAccount21, mintAuthority, 1);
+    await _mintTo(payer, mint22, tokenAccount22, mintAuthority, 1);
+    await _mintTo(payer, mint23, tokenAccount23, mintAuthority, 1);
 
     await injectRoot(tokenAccount11, mint11, tokenAccount12, mint12, program, user1);
     await injectRoot(tokenAccount11, mint11, tokenAccount13, mint13, program, user1);
@@ -891,10 +888,62 @@ describe("synft v2", () => {
     await injectNonRoot(tokenAccount11, mint11, tokenAccount14, mint14, tokenAccount22, mint22, program, user1);
     await injectNonRoot(tokenAccount11, mint11, tokenAccount14, mint14, tokenAccount23, mint23, program, user1);
   });
+
+  it("transfer crank", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+        mint11.toBuffer(),
+        mint12.toBuffer(),
+      ],
+      program.programId
+    );
+
+    let initTx = await program.rpc.transferChildNftV2(_root_metadata_bump,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          childTokenAccount: tokenAccount12.address,
+          childMintAccount: mint12,
+          rootTokenAccount: tokenAccount11.address,
+          rootMintAccount: mint11,
+          childrenMetaOfParent: _root_metadata_pda,
+          parentMintAccount: mint11,
+          rootMeta: _root_metadata_pda,
+          receiverAccount: user2.publicKey,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      }
+    );
+
+    // const [_nft11_parent_metadata_pda, _nft11_parent_metadata_bump] = await PublicKey.findProgramAddress(
+    //   [
+    //     Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+    //     mint11.toBuffer(),
+    //   ],
+    //   program.programId
+    // );
+
+    // let parentMetaNft11 = await program.account.parentMetadata.fetch(
+    //   _nft11_parent_metadata_pda
+    // );
+    
+    // let rootMeta = await program.account.childrenMetadataV2.fetch(
+    //   _root_metadata_pda
+    // );
+
+    // TODO 
+
+  });
 });
 
 async function _mintTo(payer, mint, tokenAccount, mintAuthority, amount) {
-   await mintTo(
+  await mintTo(
     anchor.getProvider().connection,
     payer,
     mint,
@@ -915,7 +964,7 @@ async function _getOrCreateAssociatedTokenAccount(payer, mint, user) {
 }
 
 async function _createMint(payer, mintAuthority) {
-   return await createMint(
+  return await createMint(
     anchor.getProvider().connection,
     payer,
     mintAuthority.publicKey,
