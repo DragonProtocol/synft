@@ -1,10 +1,8 @@
 use crate::state::metadata::{
-    ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata, CHILDREN_PDA_SEED,
+    ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata,
 };
 use anchor_lang::prelude::*;
-use anchor_lang::AccountsClose;
-use anchor_spl::token::{Mint};
-use std::mem::size_of;
+use anchor_spl::token::Mint;
 
 #[derive(Accounts)]
 pub struct TransferCrankProcess<'info> {
@@ -13,10 +11,7 @@ pub struct TransferCrankProcess<'info> {
     pub child_mint_account: Account<'info, Mint>,
     pub parent_mint_account: Account<'info, Mint>,
     #[account(
-        init_if_needed,
-        payer = operator,
-        space = 8 + size_of::<ChildrenMetadataV2>(),
-        seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump,
+        mut,
         constraint = children_meta.root == children_meta_of_root.key(),
         constraint = children_meta_of_parent.is_mutated == false,
     )]
@@ -66,17 +61,15 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
         .not_processed_children
         .contains(&ctx.accounts.children_meta.to_account_info().key)
     {
-        return err!(ErrorCode::InvalidTransferCrank);
+        return err!(ErrorCode::InvalidTransferCrankProcess);
     }
 
-    // update meta data
     ctx.accounts.children_meta.root = ctx.accounts.crank_meta.new_root_meta_data;
     ctx.accounts.children_meta.is_mutated = true;
     ctx.accounts.children_meta_of_parent.is_mutated = false;
-    ctx.accounts.children_meta_of_parent.root = *ctx.accounts.children_meta_of_parent.to_account_info().key;
+    ctx.accounts.children_meta_of_parent.root = ctx.accounts.crank_meta.new_root_meta_data;
     ctx.accounts.parent_meta.height = ctx.accounts.parent_meta_of_parent.height + 1;
 
-    // process leaf or non-leaf
     if ctx.accounts.parent_meta.has_children() {
         for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
             if !immediate_child.eq(&Pubkey::default()) {
@@ -88,21 +81,6 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
                 }
             }
         }
-    } else {
-        ctx.accounts
-            .children_meta
-            .close(ctx.accounts.operator.to_account_info())?;
-        ctx.accounts
-            .parent_meta
-            .close(ctx.accounts.operator.to_account_info())?;
-    }
-
-    // end
-    if !ctx.accounts.crank_meta.has_children() {
-        ctx.accounts.children_meta_of_root.is_mutated = false;
-        ctx.accounts
-            .crank_meta
-            .close(ctx.accounts.operator.to_account_info())?;
     }
     Ok(())
 }

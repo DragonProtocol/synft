@@ -1,9 +1,8 @@
 use crate::state::metadata::{
-    ChildrenMetadataV2, CrankMetadata, ParentMetadata, CHILDREN_PDA_SEED,
+    ChildrenMetadataV2, CrankMetadata, ParentMetadata,
     CRANK_PDA_SEED, PARENT_PDA_SEED,
 };
 use anchor_lang::prelude::*;
-use anchor_lang::AccountsClose;
 use anchor_spl::token::{Mint};
 use std::mem::size_of;
 
@@ -83,8 +82,5 @@ pub fn handler(ctx: Context<TransferCrankInit>) -> Result<()> {
     
     // parent_meta
     ctx.accounts.parent_meta.height = 1;
-
-    // children_meta_of_parent
-    ctx.accounts.children_meta_of_parent.close(ctx.accounts.operator.to_account_info())?;  
     Ok(())
 }
