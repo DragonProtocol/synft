@@ -73,6 +73,7 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
     ctx.accounts.children_meta.root = ctx.accounts.crank_meta.new_root_meta_data;
     ctx.accounts.children_meta.is_mutated = true;
     ctx.accounts.children_meta_of_parent.is_mutated = false;
+    ctx.accounts.children_meta_of_parent.root = *ctx.accounts.children_meta_of_parent.to_account_info().key;
     ctx.accounts.parent_meta.height = ctx.accounts.parent_meta_of_parent.height + 1;
 
     // process leaf or non-leaf

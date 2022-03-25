@@ -15,15 +15,7 @@ pub struct TransferCrankInit<'info> {
     pub child_mint_account: Box<Account<'info, Mint>>,
     pub parent_mint_account: Box<Account<'info, Mint>>,
     pub root_mint_account: Box<Account<'info, Mint>>,
-    #[account(
-        init_if_needed,
-        payer = operator,
-        space = 8 + size_of::<ChildrenMetadataV2>(),
-        seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump,
-        constraint = children_meta.root == children_meta_of_root.key(),
-        constraint = children_meta_of_parent.is_mutated == false,
-    )]
-    pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+
     #[account(
         mut,
         constraint = children_meta_of_parent.root != parent_mint_account.key(),
@@ -69,14 +61,9 @@ pub struct TransferCrankInit<'info> {
 }
 
 pub fn handler(ctx: Context<TransferCrankInit>) -> Result<()> {
-    // children_meta
-    ctx.accounts.children_meta.parent = *ctx.accounts.parent_mint_account.to_account_info().key;
-    ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
-    ctx.accounts.children_meta.is_mutated = false;
-
     // crank_meta
     ctx.accounts.crank_meta.old_root_meta_data =*ctx.accounts.children_meta_of_root.to_account_info().key;
-    ctx.accounts.crank_meta.new_root_meta_data = *ctx.accounts.children_meta.to_account_info().key;
+    ctx.accounts.crank_meta.new_root_meta_data = *ctx.accounts.parent_meta_of_parent.to_account_info().key;
     for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
         if !immediate_child.eq(&Pubkey::default()) {
             for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {

@@ -921,13 +921,12 @@ describe("synft v2", () => {
       }
     );
 
-    // const [_nft11_parent_metadata_pda, _nft11_parent_metadata_bump] = await PublicKey.findProgramAddress(
-    //   [
-    //     Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
-    //     mint11.toBuffer(),
-    //   ],
-    //   program.programId
-    // );
+    const [_nft11_parent_metadata_pda, _nft11_parent_metadata_bump] = await _findParentMetaPda(mint11, program);
+    const [_nft12_parent_metadata_pda, _nft12_parent_metadata_bump] = await _findParentMetaPda(mint12, program);
+
+    const [_nft11_12_parent_metadata_pda, _nft11_12_parent_metadata_bump] = await _findChildrenMetaPda(mint11,mint12, program);
+    const [_nft11_12_parent_metadata_pda, _nft11_12_parent_metadata_bump] = await _findChildrenMetaPda(mint11,mint12, program);
+
 
     // let parentMetaNft11 = await program.account.parentMetadata.fetch(
     //   _nft11_parent_metadata_pda
@@ -938,11 +937,43 @@ describe("synft v2", () => {
     // );
 
     // TODO 
-
-    
-
   });
 });
+
+async function _findChildrenMetaPda(parent_mint, child_mint, program) {
+  const [_root_metadata_pda, _root_metadata_bump] = await PublicKey.findProgramAddress(
+    [
+      Buffer.from(anchor.utils.bytes.utf8.encode("children-of")),
+      parent_mint.toBuffer(),
+      child_mint.toBuffer(),
+    ],
+    program.programId
+  );
+  return [_root_metadata_pda, _root_metadata_bump];
+}
+
+async function _findParentMetaPda(mint, program) {
+  const [_parent_pda, _parent_bump] = await PublicKey.findProgramAddress(
+    [
+      Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+      mint.toBuffer(),
+    ],
+    program.programId
+  );
+  return [_parent_pda, _parent_bump];
+}
+
+
+async function _findCrankMetaPda(mint, program) {
+  const [_crank_pda, _crank_bump] = await PublicKey.findProgramAddress(
+    [
+      Buffer.from(anchor.utils.bytes.utf8.encode("crank-seed")),
+      mint.toBuffer(),
+    ],
+    program.programId
+  );
+  return [_crank_pda, _crank_bump];
+}
 
 async function _mintTo(payer, mint, tokenAccount, mintAuthority, amount) {
   await mintTo(
