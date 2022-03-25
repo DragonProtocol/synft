@@ -124,14 +124,7 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
     }
 
     // end
-    let mut is_processed_children_empty: bool = true;
-    for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter() {
-        if !not_processed_child.eq(&Pubkey::default()) {
-            is_processed_children_empty = false;
-            break;
-        }
-    }
-    if is_processed_children_empty {
+    if !ctx.accounts.crank_meta.has_children() {
         ctx.accounts.children_meta_of_root.is_mutated = false;
         ctx.accounts
             .crank_meta

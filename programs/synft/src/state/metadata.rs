@@ -46,7 +46,18 @@ pub struct CrankMetadata {
     pub new_root_meta_data: Pubkey, 
     pub not_processed_children: [Pubkey; 32], // children nodes that have not been processed
 }
- 
+
+impl CrankMetadata{
+    pub fn has_children(&self) -> bool {
+        for child in self.not_processed_children.iter() {
+            if !child.eq(&Pubkey::default()) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 #[account]
 pub struct ParentMetadata {
     pub bump: u8,
