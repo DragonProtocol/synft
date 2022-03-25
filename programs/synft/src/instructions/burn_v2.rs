@@ -4,7 +4,7 @@ use anchor_spl::token::{
 };
 use spl_token::instruction::AuthorityType;
 use crate::state::metadata::{
-    CHILDREN_PDA_SEED, PARENT_PDA_SEED, SOL_PDA_SEED, ParentMetadata, SolAccount, CrunkMetadata, ChildrenMetadataV2
+    CRANK_PDA_SEED, CHILDREN_PDA_SEED, PARENT_PDA_SEED, SOL_PDA_SEED, ParentMetadata, SolAccount, CrankMetadata, ChildrenMetadataV2
 };
 use anchor_lang::AccountsClose;
 use std::mem::size_of;
@@ -68,8 +68,6 @@ pub fn handler(ctx: Context<BurnV2>, _sol_account_bump: u8, _parent_metadata_bum
 
 
 //const ZEROPUBKEY: Pubkey = Pubkey::new_from_array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-
-pub const CRUNK_PDA_SEED: &[u8] = b"crunk-metadata-seed";
 
 // ------------------------------------------------------------------------------------------------------------------
 
@@ -240,10 +238,10 @@ pub struct StartBranch<'info> {
     #[account(
         init,
         payer = current_owner,
-        space = size_of::<CrunkMetadata>() + 8,
-        seeds = [CRUNK_PDA_SEED, child_mint.key().as_ref()], bump,
+        space = size_of::<CrankMetadata>() + 8,
+        seeds = [CRANK_PDA_SEED, child_mint.key().as_ref()], bump,
     )]
-    pub crunk_metadata : Account<'info, CrunkMetadata>,
+    pub crank_metadata : Account<'info, CrankMetadata>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -260,7 +258,7 @@ pub fn handle_start_branch(ctx: Context<StartBranch>) -> Result<()> {
     let child_mint = &mut ctx.accounts.child_mint;
     let child_metadata = &mut ctx.accounts.child_metadata;
     let children_metadata = &mut ctx.accounts.children_metadata;
-    let crunk_metadata = &mut ctx.accounts.crunk_metadata;
+    let crank_metadata = &mut ctx.accounts.crank_metadata;
     let token_program = &mut ctx.accounts.token_program;
 
     if children_metadata.is_mutated {
@@ -270,11 +268,11 @@ pub fn handle_start_branch(ctx: Context<StartBranch>) -> Result<()> {
     if pubkey_array_len(&child_metadata.immediate_children) > 0 {
         children_metadata.is_mutated = true;
 
-        crunk_metadata.tranfered_nft = child_mint.key();
-        crunk_metadata.old_root_meta_data = parent_mint.key();
-        crunk_metadata.new_root_meta_data = child_mint.key();
+        crank_metadata.tranfered_nft = child_mint.key();
+        crank_metadata.old_root_meta_data = parent_mint.key();
+        crank_metadata.new_root_meta_data = child_mint.key();
     
-        pubkey_array_append(&child_metadata.immediate_children, &mut crunk_metadata.not_processed_children);
+        pubkey_array_append(&child_metadata.immediate_children, &mut crank_metadata.not_processed_children);
     } else {
         pubkey_array_remove(&mut parent_metadata.immediate_children, child_mint.key());
         children_metadata.is_mutated = false;
@@ -295,7 +293,7 @@ pub fn handle_start_branch(ctx: Context<StartBranch>) -> Result<()> {
         )?;
         children_metadata.close(current_owner.to_account_info())?;    
         child_metadata.close(current_owner.to_account_info())?;
-        crunk_metadata.close(current_owner.to_account_info())?;
+        crank_metadata.close(current_owner.to_account_info())?;
     }
 
     Ok(())
@@ -344,9 +342,9 @@ pub struct UpdateBranch<'info> {
     pub root_children_metadata : Account<'info, ChildrenMetadataV2>,
 
     #[account(
-        seeds = [CRUNK_PDA_SEED, new_root_mint.key().as_ref()], bump,
+        seeds = [CRANK_PDA_SEED, new_root_mint.key().as_ref()], bump,
     )]
-    pub crunk_metadata : Account<'info, CrunkMetadata>,
+    pub crank_metadata : Account<'info, CrankMetadata>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -366,19 +364,19 @@ pub fn handle_update_branch(ctx: Context<UpdateBranch>) -> Result<()>{
     let new_root_mint = &mut ctx.accounts.new_root_mint;
     let new_root_token = &mut ctx.accounts.new_root_token;
     let new_root_metadata = &mut ctx.accounts.new_root_metadata;
-    let crunk_metadata = &mut ctx.accounts.crunk_metadata;
+    let crank_metadata = &mut ctx.accounts.crank_metadata;
     let root_children_metadata = &mut ctx.accounts.root_children_metadata;
 
     let token_program = &mut ctx.accounts.token_program;
 
-    if !crunk_metadata.not_processed_children[0].eq(&child_mint.key()) {
+    if !crank_metadata.not_processed_children[0].eq(&child_mint.key()) {
         panic!("handle_update_branch");
     }
     children_metadata.root = new_root_metadata.key();
-    crunk_metadata.not_processed_children[0] = Pubkey::default();
-    pubkey_array_append(& child_metadata.immediate_children, &mut crunk_metadata.not_processed_children);
+    crank_metadata.not_processed_children[0] = Pubkey::default();
+    pubkey_array_append(& child_metadata.immediate_children, &mut crank_metadata.not_processed_children);
 
-    let branch_finished = pubkey_array_all_empty(& crunk_metadata.not_processed_children);
+    let branch_finished = pubkey_array_all_empty(& crank_metadata.not_processed_children);
     if branch_finished {
         pubkey_array_remove(&mut old_root_metadata.immediate_children, new_root_mint.key());
         root_children_metadata.is_mutated = false;
@@ -400,7 +398,7 @@ pub fn handle_update_branch(ctx: Context<UpdateBranch>) -> Result<()>{
         )?;
 
         root_children_metadata.close(current_owner.to_account_info())?;    
-        crunk_metadata.close(current_owner.to_account_info())?;
+        crank_metadata.close(current_owner.to_account_info())?;
 
         let all_finished = pubkey_array_all_empty(& old_root_metadata.immediate_children);
         if all_finished {
