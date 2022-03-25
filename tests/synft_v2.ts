@@ -924,8 +924,8 @@ describe("synft v2", () => {
     const [_nft11_parent_metadata_pda, _nft11_parent_metadata_bump] = await _findParentMetaPda(mint11, program);
     const [_nft12_parent_metadata_pda, _nft12_parent_metadata_bump] = await _findParentMetaPda(mint12, program);
 
-    const [_nft11_12_parent_metadata_pda, _nft11_12_parent_metadata_bump] = await _findChildrenMetaPda(mint11,mint12, program);
-    const [_nft11_12_parent_metadata_pda, _nft11_12_parent_metadata_bump] = await _findChildrenMetaPda(mint11,mint12, program);
+    // const [_nft11_12_parent_metadata_pda, _nft11_12_parent_metadata_bump] = await _findChildrenMetaPda(mint11,mint12, program);
+    // const [_nft11_12_parent_metadata_pda, _nft11_12_parent_metadata_bump] = await _findChildrenMetaPda(mint11,mint12, program);
 
 
     // let parentMetaNft11 = await program.account.parentMetadata.fetch(
