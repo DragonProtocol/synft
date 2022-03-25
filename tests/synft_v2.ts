@@ -613,9 +613,9 @@ describe("synft v2", () => {
   // Transfer NFT, transfer out nft5 to user2
   // user1        user2           
   //  |             |     
-  // nft3         nft5    
-  //  |            
-  // nft4  >>>>     
+  // nft3         nft4    
+  //  |             |
+  // nft4  >>>>   nft5
   //  |
   // nft5
   it("Transfer NFT to user", async () => {
