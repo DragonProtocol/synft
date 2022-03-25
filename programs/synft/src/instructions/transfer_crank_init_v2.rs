@@ -4,7 +4,7 @@ use crate::state::metadata::{
 };
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
-use anchor_spl::token::{Mint, TokenAccount};
+use anchor_spl::token::{Mint};
 use std::mem::size_of;
 
 #[derive(Accounts)]
@@ -12,28 +12,8 @@ pub struct TransferCrankInit<'info> {
     #[account(mut)]
     pub operator: Signer<'info>,
     /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut)]
-    pub current_owner: AccountInfo<'info>,
-    #[account(
-        mut,
-        constraint = child_token_account.amount == 1,
-        constraint = child_token_account.mint == child_mint_account.key(),
-        constraint = child_token_account.owner == current_owner.key(),
-    )]
-    pub child_token_account: Box<Account<'info, TokenAccount>>,
     pub child_mint_account: Box<Account<'info, Mint>>,
-    #[account(
-        constraint = parent_token_account.amount == 1,
-        constraint = parent_token_account.mint == parent_mint_account.key(),
-    )]
-    pub parent_token_account: Box<Account<'info, TokenAccount>>,
     pub parent_mint_account: Box<Account<'info, Mint>>,
-    #[account(
-        constraint = root_token_account.amount == 1,
-        constraint = root_token_account.mint == root_mint_account.key(),
-        constraint = root_token_account.owner == current_owner.key(),
-    )]
-    pub root_token_account: Box<Account<'info, TokenAccount>>,
     pub root_mint_account: Box<Account<'info, Mint>>,
     #[account(
         init_if_needed,
@@ -108,7 +88,7 @@ pub fn handler(ctx: Context<TransferCrankInit>) -> Result<()> {
     }
 
     // parent_meta_of_parent
-    for immediate_child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
+    for immediate_child in ctx.accounts.parent_meta_of_parent.immediate_children.iter_mut() {
         if immediate_child.to_bytes() == ctx.accounts.child_mint_account.key().to_bytes() {
             *immediate_child = Pubkey::default();
         }
