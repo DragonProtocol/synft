@@ -4,7 +4,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("nftbxaFtUMxSip8eMTKCPbX9HvjKQmcREG6NyQ23auD");
+declare_id!("HxtTmrta1Ng5NmttjijHoJibUQQFzNaYwQigq63P5Wyq");
 
 #[program]
 pub mod synft {
@@ -68,10 +68,17 @@ pub mod synft {
     pub fn inject_to_root_v2(
         ctx: Context<InjectToRootV2>,
         is_mutable: bool,
-        child_bump: u8,
-        parent_bump: u8,
+        child_meta_bump: u8,
+        parent_mata_bump: u8,
+        parent_mata_of_child_bump: u8,
     ) -> Result<()> {
-        instructions::inject_to_root_v2::handler(ctx, is_mutable, child_bump, parent_bump)
+        instructions::inject_to_root_v2::handler(
+            ctx,
+            is_mutable,
+            child_meta_bump,
+            parent_mata_bump,
+            parent_mata_of_child_bump,
+        )
     }
 
     pub fn inject_to_non_root_v2(
@@ -105,5 +112,13 @@ pub mod synft {
         _parent_metadata_bump: u8,
     ) -> Result<()> {
         instructions::burn_v2::handler(ctx, _sol_account_bump, _parent_metadata_bump)
+    }
+
+    pub fn transfer_crank_init_v2(ctx: Context<TransferCrankInit>) -> Result<()> {
+        instructions::transfer_crank_init_v2::handler(ctx)
+    }
+
+    pub fn transfer_crank_process_v2(ctx: Context<TransferCrankProcess>) -> Result<()> {
+        instructions::transfer_crank_process_v2::handler(ctx)
     }
 }

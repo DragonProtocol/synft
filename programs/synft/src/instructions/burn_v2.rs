@@ -24,6 +24,7 @@ pub struct BurnV2<'info> {
         space = size_of::<ParentMetadata>() + 8,
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = parent_token_account.mint == parent_mint_account.key(),
+        constraint = parent_metadata.is_burnt == false,
         seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump,
     )]
     pub parent_metadata : Account<'info, ParentMetadata>,

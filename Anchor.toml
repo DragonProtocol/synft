@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-synft = "nftbxaFtUMxSip8eMTKCPbX9HvjKQmcREG6NyQ23auD"
+synft = "HxtTmrta1Ng5NmttjijHoJibUQQFzNaYwQigq63P5Wyq"
 
 [registry]
 url = "https://anchor.projectserum.com"

@@ -6,9 +6,8 @@ pub const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
 pub const SYNTHETIC_NFT_MINT_SEED: &[u8] = b"synthetic-nft-mint-seed";
 pub const SYNTHETIC_NFT_ACOUNT_SEED: &[u8] = b"synthetic-nft-account-seed";
 pub const SOL_PDA_SEED: &[u8] = b"sol-seed";
+pub const CRANK_PDA_SEED: &[u8] = b"crank-pda-seed";
 pub const TREE_LEVEL_HEIGHT_LIMIT: u8 = 3;
-
-pub const PLACEHOLDER_PUBKEY: Pubkey = Pubkey::new_from_array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
 
 #[account]
 pub struct ChildrenMetadata {
@@ -27,6 +26,7 @@ pub struct ChildrenMetadataV2 {
     pub parent: Pubkey,
     pub root: Pubkey,
     pub is_mutable: bool,
+    pub is_burnt: bool,
     pub is_mutated: bool,
     pub child_type: ChildType,
     pub bump: u8,
@@ -40,24 +40,41 @@ pub enum ChildType {
 }
 
 #[account]
-pub struct CrunkMetadata {
+pub struct CrankMetadata {
     pub tranfered_nft: Pubkey, // nft mint account
     pub old_root_meta_data: Pubkey, // old root meta data
     pub new_root_meta_data: Pubkey, 
-    pub new_owner: Pubkey,
     pub not_processed_children: [Pubkey; 32], // children nodes that have not been processed
 }
 
-// use cases: 
-// 1. build the whole nft tree
-// 2. crunk processing depends on this structure 
+impl CrankMetadata{
+    pub fn has_children(&self) -> bool {
+        for child in self.not_processed_children.iter() {
+            if !child.eq(&Pubkey::default()) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 #[account]
 pub struct ParentMetadata {
-    // pub nft: Pubkey,  // pointer to self mint
     pub bump: u8,
     pub is_burnt: bool,
     pub height: u8,
     pub immediate_children: [Pubkey; 3], //pointer to immediate children
+}
+
+impl ParentMetadata{
+    pub fn has_children(&self) -> bool {
+        for immediate_child in self.immediate_children.iter() {
+            if !immediate_child.eq(&Pubkey::default()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 #[account]
@@ -75,4 +92,6 @@ pub enum ErrorCode {
     InvalidExtractAttempt,
     #[msg("Wrong type of burn instruction for the token")]
     InvalidBurnType,
+    #[msg("Wrong opration of crank instruction for the token")]
+    InvalidTransferCrank
 }
