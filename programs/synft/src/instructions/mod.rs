@@ -12,7 +12,8 @@ pub mod transfer_child_nft_v2;
 pub mod inject_sol_v2;
 pub mod extract_sol_v2;
 pub mod burn_v2;
-pub mod transfer_crank_v2;
+pub mod transfer_crank_init_v2;
+pub mod transfer_crank_process_v2;
 
 pub use burn_for_sol::*;
 pub use burn_for_token::*;
@@ -28,4 +29,5 @@ pub use transfer_child_nft_v2::*;
 pub use inject_sol_v2::*;
 pub use extract_sol_v2::*;
 pub use burn_v2::*;
-pub use transfer_crank_v2::*;
+pub use transfer_crank_init_v2::*;
+pub use transfer_crank_process_v2::*;
