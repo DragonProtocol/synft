@@ -294,6 +294,7 @@ pub fn handle_start_branch(ctx: Context<StartBranch>) -> Result<()> {
         )?;
         children_metadata.close(current_owner.to_account_info())?;    
         child_metadata.close(current_owner.to_account_info())?;
+        crunk_metadata.close(current_owner.to_account_info())?;
     }
 
     Ok(())
@@ -398,6 +399,7 @@ pub fn handle_update_branch(ctx: Context<UpdateBranch>) -> Result<()>{
         )?;
 
         root_children_metadata.close(current_owner.to_account_info())?;    
+        crunk_metadata.close(current_owner.to_account_info())?;
 
         let all_finished = pubkey_array_all_empty(& old_root_metadata.immediate_children);
         if all_finished {
