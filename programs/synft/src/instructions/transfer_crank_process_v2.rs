@@ -1,5 +1,6 @@
 use crate::state::metadata::{
-    ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED,
+    ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata, CHILDREN_PDA_SEED,
+    PARENT_PDA_SEED,
 };
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
@@ -86,37 +87,23 @@ pub struct TransferCrankProcess<'info> {
 }
 
 pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
-    let is_in_processed_children: bool = ctx
+    if !ctx
         .accounts
         .crank_meta
         .not_processed_children
-        .contains(&ctx.accounts.children_meta.to_account_info().key);
-    if !is_in_processed_children {
+        .contains(&ctx.accounts.children_meta.to_account_info().key)
+    {
         return err!(ErrorCode::InvalidTransferCrank);
     }
 
     // update meta data
     ctx.accounts.children_meta.root = ctx.accounts.crank_meta.new_root_meta_data;
-    ctx.accounts.parent_meta.height = ctx.accounts.parent_meta_of_parent.height + 1;
-    ctx.accounts.children_meta_of_parent.is_mutated = false;
     ctx.accounts.children_meta.is_mutated = true;
+    ctx.accounts.children_meta_of_parent.is_mutated = false;
+    ctx.accounts.parent_meta.height = ctx.accounts.parent_meta_of_parent.height + 1;
 
     // process leaf or non-leaf
-    let mut is_leaf: bool = true;
-    for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
-        if immediate_child.eq(&Pubkey::default()) {
-            is_leaf = false;
-            break;
-        }
-    }
-    if is_leaf {
-        ctx.accounts
-            .children_meta
-            .close(ctx.accounts.operator.to_account_info())?;
-        ctx.accounts
-            .parent_meta
-            .close(ctx.accounts.operator.to_account_info())?;
-    } else {
+    if ctx.accounts.parent_meta.has_children() {
         for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
             if !immediate_child.eq(&Pubkey::default()) {
                 for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut()
@@ -127,6 +114,13 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
                 }
             }
         }
+    } else {
+        ctx.accounts
+            .children_meta
+            .close(ctx.accounts.operator.to_account_info())?;
+        ctx.accounts
+            .parent_meta
+            .close(ctx.accounts.operator.to_account_info())?;
     }
 
     // end

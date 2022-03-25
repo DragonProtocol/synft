@@ -55,6 +55,17 @@ pub struct ParentMetadata {
     pub immediate_children: [Pubkey; 3], //pointer to immediate children
 }
 
+impl ParentMetadata{
+    pub fn has_children(&self) -> bool {
+        for immediate_child in self.immediate_children.iter() {
+            if !immediate_child.eq(&Pubkey::default()) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 #[account]
 pub struct SolAccount {
     pub bump: u8,
