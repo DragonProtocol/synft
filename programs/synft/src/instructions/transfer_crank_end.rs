@@ -18,15 +18,15 @@ pub struct TransferCrankEnd<'info> {
     )]
     pub children_meta_of_root: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
+        mut,
+        constraint = crank_meta.closed_children_meta_data == children_meta_of_close.key(),
+    )]
+    pub children_meta_of_close: Box<Account<'info, ChildrenMetadataV2>>,
+    #[account(
        mut,
         constraint = parent_meta.is_burnt == false,
     )]
     pub parent_meta: Box<Account<'info, ParentMetadata>>,
-    #[account(
-        mut,
-        constraint = parent_meta_of_root.is_burnt == false,
-    )]
-    pub parent_meta_of_root: Box<Account<'info, ParentMetadata>>,
     #[account(
         mut,
         constraint = crank_meta.old_root_meta_data == children_meta_of_root.key(),
@@ -38,13 +38,9 @@ pub struct TransferCrankEnd<'info> {
 }
 
 pub fn handler(ctx: Context<TransferCrankEnd>) -> Result<()> {
-    if ctx
-        .accounts
-        .parent_meta.has_children()
-    {
+    if ctx.accounts.parent_meta.has_children() {
         return err!(ErrorCode::InvalidTransferCrankEnd);
     }
-    ctx.accounts.children_meta_of_parent.is_mutated = false;
 
     if !ctx.accounts.crank_meta.has_children() {
         ctx.accounts.children_meta_of_root.is_mutated = false;
@@ -52,7 +48,7 @@ pub fn handler(ctx: Context<TransferCrankEnd>) -> Result<()> {
             .crank_meta
             .close(ctx.accounts.operator.to_account_info())?;
         ctx.accounts
-            .children_meta_of_root
+            .children_meta_of_close
             .close(ctx.accounts.operator.to_account_info())?;
     }
     Ok(())

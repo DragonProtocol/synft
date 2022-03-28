@@ -42,8 +42,8 @@ pub enum ChildType {
 #[account]
 pub struct CrankMetadata {
     pub tranfered_nft: Pubkey, // nft mint account
-    pub old_root_meta_data: Pubkey, // old root meta data
-    pub new_root_meta_data: Pubkey, 
+    pub old_children_root_meta_data: Pubkey, // old root meta data
+    pub closed_children_meta_data: Pubkey,  // need to close
     pub not_processed_children: [Pubkey; 32], // children nodes that have not been processed
 }
 
