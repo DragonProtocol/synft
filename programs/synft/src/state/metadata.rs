@@ -63,6 +63,7 @@ pub struct ParentMetadata {
     pub bump: u8,
     pub is_burnt: bool,
     pub height: u8,
+    pub self_mint: Pubkey, //pointer to self
     pub immediate_children: [Pubkey; 3], //pointer to immediate children
 }
 

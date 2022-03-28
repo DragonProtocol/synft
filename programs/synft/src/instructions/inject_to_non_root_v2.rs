@@ -97,6 +97,7 @@ pub fn handler(
     ctx.accounts.parent_meta_of_child.height = ctx.accounts.parent_meta.height + 1;
     ctx.accounts.parent_meta_of_child.is_burnt = false;
     ctx.accounts.parent_meta_of_child.bump = parent_bump;
+    ctx.accounts.parent_meta_of_child.self_mint = *ctx.accounts.child_mint_account.to_account_info().key;
     for child in ctx.accounts.parent_meta.immediate_children.iter_mut() {
         if child.to_bytes() == Pubkey::default().to_bytes() {
             *child = ctx.accounts.children_meta.child;

@@ -11,14 +11,17 @@ pub struct TransferCrankProcess<'info> {
     pub child_mint_account: Account<'info, Mint>,
     #[account(
         mut,
+        constraint = children_meta.child == child_mint_account.key(),
     )]
     pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
     #[account(
        mut,
+       constraint = parent_meta.self_mint == child_mint_account.key(),
     )]
     pub parent_meta: Box<Account<'info, ParentMetadata>>,
     #[account(
         mut,
+        constraint = parent_meta_of_parent.self_mint == children_meta.parent,
     )]
     pub parent_meta_of_parent: Box<Account<'info, ParentMetadata>>,
     #[account(
