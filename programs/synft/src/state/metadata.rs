@@ -21,7 +21,7 @@ pub struct ChildrenMetadata {
 
 #[account]
 pub struct ChildrenMetadataV2 {
-    // parent, root, mint refer to "mint"
+    // parent, child refer to "mint"
     pub child: Pubkey,
     pub parent: Pubkey,
     pub root: Pubkey,
