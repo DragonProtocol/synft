@@ -973,6 +973,11 @@ describe("synft v2", () => {
         signers: [user1],
       }
     );
+
+    let parentMetaNft12 = await program.account.parentMetadata.fetch(
+      _nft12_parent_metadata_pda
+    );
+
     crankMetadata = await program.account.crankMetadata.fetch(
       _crank_metadata_pda
     );
@@ -1045,7 +1050,6 @@ describe("synft v2", () => {
     crankMetadata.notProcessedChildren.forEach(element => assert.ok(element.toBase58() != mint17.toBase58()));
     assert.ok(parentMetaNft17.height == 2);
     assert.ok(childrenMeta12To17.root.toBase58() == _children_metadata_pda_12_17.toBase58());
-    console.log(crankMetadata);
 
     // crank end
     let endTx = await program.rpc.transferCrankEndV2(

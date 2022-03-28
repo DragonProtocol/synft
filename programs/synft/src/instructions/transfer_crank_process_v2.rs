@@ -17,7 +17,10 @@ pub struct TransferCrankProcess<'info> {
        constraint = parent_meta.self_mint == child_mint_account.key(),
     )]
     pub parent_meta: Box<Account<'info, ParentMetadata>>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = parent_meta_of_parent.self_mint == children_meta.parent,
+    )]
     pub parent_meta_of_parent: Box<Account<'info, ParentMetadata>>,
     #[account(mut)]
     pub crank_meta: Box<Account<'info, CrankMetadata>>,
@@ -56,7 +59,14 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
 
     // remove the processed child
     for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
-        if not_processed_child.to_bytes() == ctx.accounts.child_mint_account.to_account_info().key.to_bytes() {
+        if not_processed_child.to_bytes()
+            == ctx
+                .accounts
+                .child_mint_account
+                .to_account_info()
+                .key
+                .to_bytes()
+        {
             *not_processed_child = Pubkey::default();
         }
     }
