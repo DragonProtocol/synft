@@ -65,7 +65,7 @@ pub fn handler(ctx: Context<TransferCrankInit>) -> Result<()> {
         }
     }
 
-    // set parent meta data of parent
+    // remove child in parent meta data 
     for immediate_child in ctx
         .accounts
         .parent_meta_of_parent
