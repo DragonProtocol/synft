@@ -1,10 +1,8 @@
 use crate::state::metadata::{
-    ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata, CHILDREN_PDA_SEED,
+    ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata,
 };
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
-use anchor_spl::token::Mint;
-use std::mem::size_of;
 
 #[derive(Accounts)]
 pub struct TransferCrankEnd<'info> {
@@ -29,7 +27,7 @@ pub struct TransferCrankEnd<'info> {
     pub parent_meta: Box<Account<'info, ParentMetadata>>,
     #[account(
         mut,
-        constraint = crank_meta.old_root_meta_data == children_meta_of_root.key(),
+        constraint = crank_meta.old_children_root_meta_data == children_meta_of_root.key(),
     )]
     pub crank_meta: Box<Account<'info, CrankMetadata>>,
 

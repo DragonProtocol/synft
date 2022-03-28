@@ -121,4 +121,7 @@ pub mod synft {
     pub fn transfer_crank_process_v2(ctx: Context<TransferCrankProcess>) -> Result<()> {
         instructions::transfer_crank_process_v2::handler(ctx)
     }
+    pub fn transfer_crank_end_v2(ctx: Context<TransferCrankEnd>) -> Result<()> {
+        instructions::transfer_crank_end_v2::handler(ctx)
+    }
 }

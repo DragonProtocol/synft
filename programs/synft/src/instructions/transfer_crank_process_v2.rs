@@ -1,6 +1,4 @@
-use crate::state::metadata::{
-    ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata,
-};
+use crate::state::metadata::{ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata};
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 
@@ -19,14 +17,9 @@ pub struct TransferCrankProcess<'info> {
        constraint = parent_meta.self_mint == child_mint_account.key(),
     )]
     pub parent_meta: Box<Account<'info, ParentMetadata>>,
-    #[account(
-        mut,
-        constraint = parent_meta_of_parent.self_mint == children_meta.parent,
-    )]
+    #[account(mut)]
     pub parent_meta_of_parent: Box<Account<'info, ParentMetadata>>,
-    #[account(
-        mut,
-    )]
+    #[account(mut)]
     pub crank_meta: Box<Account<'info, CrankMetadata>>,
 
     pub system_program: Program<'info, System>,
@@ -47,6 +40,7 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
     ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
     ctx.accounts.parent_meta.height = ctx.accounts.parent_meta_of_parent.height + 1;
 
+    // add children to crank
     if ctx.accounts.parent_meta.has_children() {
         for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
             if !immediate_child.eq(&Pubkey::default()) {
@@ -57,6 +51,13 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
                     }
                 }
             }
+        }
+    }
+
+    // remove the processed child
+    for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
+        if not_processed_child.to_bytes() == ctx.accounts.child_mint_account.to_account_info().key.to_bytes() {
+            *not_processed_child = Pubkey::default();
         }
     }
     Ok(())

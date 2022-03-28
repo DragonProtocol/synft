@@ -34,8 +34,6 @@ pub struct TransferCrankInit<'info> {
     pub parent_meta: Box<Account<'info, ParentMetadata>>,
     #[account(mut)]
     pub parent_meta_of_parent: Box<Account<'info, ParentMetadata>>,
-    #[account(mut)]
-    pub parent_meta_of_root: Box<Account<'info, ParentMetadata>>,
     #[account(
         init,
         payer = operator,
@@ -49,22 +47,25 @@ pub struct TransferCrankInit<'info> {
 }
 
 pub fn handler(ctx: Context<TransferCrankInit>) -> Result<()> {
-    // crank_meta
+    // set crank meta data
     ctx.accounts.crank_meta.old_children_root_meta_data =
         *ctx.accounts.children_meta_of_root.to_account_info().key;
     ctx.accounts.crank_meta.closed_children_meta_data =
         *ctx.accounts.children_meta_of_parent.to_account_info().key;
+    ctx.accounts.crank_meta.tranfered_nft = 
+        *ctx.accounts.child_mint_account.to_account_info().key;
     for immediate_child in ctx.accounts.parent_meta.immediate_children.iter() {
         if !immediate_child.eq(&Pubkey::default()) {
             for not_processed_child in ctx.accounts.crank_meta.not_processed_children.iter_mut() {
                 if not_processed_child.to_bytes() == Pubkey::default().to_bytes() {
                     *not_processed_child = immediate_child.clone();
+                    break;
                 }
             }
         }
     }
 
-    // parent_meta_of_parent
+    // set parent meta data of parent
     for immediate_child in ctx
         .accounts
         .parent_meta_of_parent
@@ -75,7 +76,7 @@ pub fn handler(ctx: Context<TransferCrankInit>) -> Result<()> {
             *immediate_child = Pubkey::default();
         }
     }
-    // parent_meta
+    // set parent meta data
     ctx.accounts.parent_meta.height = 1;
     Ok(())
 }
