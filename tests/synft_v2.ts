@@ -914,6 +914,7 @@ describe("synft v2", () => {
         signers: [user1],
       }
     );
+    // await new Promise(f => setTimeout(f, 10000000));
 
     // crank init
     const [_nft11_parent_metadata_pda, _nft11_parent_metadata_bump] = await _findParentMetaPda(mint11, program);
