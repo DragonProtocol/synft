@@ -121,4 +121,21 @@ pub mod synft {
     pub fn transfer_crank_process_v2(ctx: Context<TransferCrankProcess>) -> Result<()> {
         instructions::transfer_crank_process_v2::handler(ctx)
     }
+
+
+    pub fn start_burn(ctx: Context<StartBurn>) -> Result<()> {
+        instructions::burn_v2::handle_start_burn(ctx)
+    }
+
+    pub fn start_branch(ctx: Context<StartBranch>) -> Result<()> {
+        instructions::burn_v2::handle_start_branch(ctx)
+    }
+
+    pub fn update_branch(ctx: Context<UpdateBranch>) -> Result<()> {
+        instructions::burn_v2::handle_update_branch(ctx)
+    }
+    
+    pub fn deal_single_new_root(ctx: Context<DealSingleNewRoot>) -> Result<()> {
+        instructions::burn_v2::handle_deal_single_new_root(ctx)
+    }
 }

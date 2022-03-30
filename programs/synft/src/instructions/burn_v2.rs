@@ -66,9 +66,6 @@ pub fn handler(ctx: Context<BurnV2>, _sol_account_bump: u8, _parent_metadata_bum
     Ok(())
 }
 
-
-//const ZEROPUBKEY: Pubkey = Pubkey::new_from_array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-
 // ------------------------------------------------------------------------------------------------------------------
 
 fn into_set_authority_context<'info>(
@@ -96,6 +93,7 @@ pub fn pubkey_array_append(src: &[Pubkey], dst: &mut [Pubkey]) {
             for j in 0..dst.len() {
                 if dst[j].eq(&Pubkey::default()) {
                     dst[j] = src[i];
+                    break;
                 }
             }
         }
@@ -109,6 +107,16 @@ pub fn pubkey_array_all_empty(arr: &[Pubkey]) -> bool {
         }
     }
     true
+}
+
+pub fn pubkey_array_find(arr: &[Pubkey], key: Pubkey) -> u32 {
+
+    for i in 0..arr.len() {
+        if arr[i].eq(&key) {
+            return i as u32;
+        }
+    }
+    u32::MAX
 }
 
 pub fn pubkey_array_remove(arr: &mut[Pubkey], key: Pubkey) {
@@ -129,32 +137,64 @@ pub fn pubkey_array_len(arr: &[Pubkey]) -> u32 {
     cnt
 }
 
+pub fn pubkey_array_print(arr: &[Pubkey]) {
+    msg!("------------>>>>");
+    for i in 0..arr.len() {
+        msg!("{:x?}", arr[i].to_bytes());
+    }
+    msg!("------------<<<<");
+}
+
 // ------------------------------------------------------------------------------------------------------------------
+
+#[account]
+pub struct NewRootInfo {
+    branch_finished: u32,
+    root: Pubkey,
+}
+
+#[account]
+pub struct BranchInfo {
+}
+
+#[account]
+pub struct RootOwner {
+    owner: Pubkey
+}
 
 #[derive(Accounts)]
 pub struct StartBurn<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(mut)]
-    pub root_mint: Account<'info, Mint>,
+    pub parent_mint_account: Account<'info, Mint>,
     #[account(mut)]
-    pub root_token: Account<'info, TokenAccount>,
+    pub parent_token_account: Account<'info, TokenAccount>,
     #[account(
         init_if_needed,
         payer = current_owner,
         space = size_of::<ParentMetadata>() + 8,
-        constraint = root_token.owner == *current_owner.to_account_info().key,
-        constraint = root_token.mint == root_mint.key(),
-        seeds = [PARENT_PDA_SEED, root_mint.key().as_ref()], bump,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        constraint = parent_token_account.mint == parent_mint_account.key(),
+        constraint = parent_metadata.is_burnt == false,
+        seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump,
     )]
-    pub root_metadata : Account<'info, ParentMetadata>,
+    pub parent_metadata : Box<Account<'info, ParentMetadata>>,
     #[account(
         init_if_needed,
         payer = current_owner,
         space = size_of::<SolAccount>() + 8,
-        seeds = [SOL_PDA_SEED, root_mint.key().as_ref()], bump,
+        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump,
     )]
-    pub sol_account : Account<'info, SolAccount>,
+    pub sol_account : Box<Account<'info, SolAccount>>,
+    #[account(
+        init,
+        payer = current_owner,
+        space = size_of::<RootOwner>() + 8,
+        seeds = [b"root-owner-seed", parent_mint_account.key().as_ref()], bump,
+    )]
+    pub old_root_owner: Box<Account<'info, RootOwner>>,
+
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
@@ -162,18 +202,15 @@ pub struct StartBurn<'info> {
 
 pub fn handle_start_burn(ctx: Context<StartBurn>) -> Result<()> {
     let current_owner = &mut ctx.accounts.current_owner;
-    let root_mint = &mut ctx.accounts.root_mint;
-    let root_token = &mut ctx.accounts.root_token;
-    let root_metadata = &mut ctx.accounts.root_metadata;
+    let root_mint = &mut ctx.accounts.parent_mint_account;
+    let root_token = &mut ctx.accounts.parent_token_account;
+    let root_metadata = &mut ctx.accounts.parent_metadata;
     let sol_account = &mut ctx.accounts.sol_account;
     let token_program = &mut ctx.accounts.token_program;
+    let old_root_owner = &mut ctx.accounts.old_root_owner;
 
-    if root_metadata.is_burnt {
-        panic!("handle_burn");        
-    }
     root_metadata.is_burnt = true;
-
-    sol_account.close(current_owner.to_account_info())?;
+    old_root_owner.owner = current_owner.key();
 
     if pubkey_array_len(&root_metadata.immediate_children) > 0 {
         token::set_authority(
@@ -194,8 +231,119 @@ pub fn handle_start_burn(ctx: Context<StartBurn>) -> Result<()> {
                 current_owner.to_account_info()
             ), 
             root_token.amount)?;
-        root_metadata.close(current_owner.to_account_info())?;    
+        root_metadata.close(current_owner.to_account_info())?;
+        old_root_owner.close(current_owner.to_account_info())?;
     }
+
+    sol_account.close(current_owner.to_account_info())?;
+    
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct DealSingleNewRoot<'info> {
+    #[account(mut)]
+    pub current_owner: Signer<'info>,
+
+    #[account(mut)]
+    pub parent_token: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub child_token: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub parent_mint: Account<'info, Mint>,
+    #[account(mut)]
+    pub child_mint: Account<'info, Mint>,
+
+    #[account(mut,
+        constraint = parent_metadata.is_burnt == true,
+        constraint = parent_token.mint == parent_mint.key(),
+        constraint = child_token.mint == child_mint.key(),
+        seeds = [PARENT_PDA_SEED, parent_mint.key().as_ref()], bump,
+    )]
+    pub parent_metadata : Box<Account<'info, ParentMetadata>>,
+    #[account(
+        init_if_needed,
+        payer = current_owner,
+        space = size_of::<ParentMetadata>() + 8,
+        seeds = [PARENT_PDA_SEED, child_mint.key().as_ref()], bump,
+    )]
+    pub child_metadata : Box<Account<'info, ParentMetadata>>,
+
+    #[account(mut,
+        constraint = children_metadata.is_mutated == false,
+        seeds = [CHILDREN_PDA_SEED, parent_mint.key().as_ref(), child_mint.key().as_ref()], bump,
+    )]
+    pub children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
+
+    #[account(mut,
+        seeds = [b"root-owner-seed", parent_mint.key().as_ref()], bump,
+    )]
+    pub old_root_owner: Box<Account<'info, RootOwner>>,
+
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+    pub token_program: Program<'info, Token>,
+}
+
+pub fn handle_deal_single_new_root(ctx: Context<DealSingleNewRoot>) -> Result<()> {
+    let current_owner = &mut ctx.accounts.current_owner;
+    let parent_token = &mut ctx.accounts.parent_token;
+    let parent_mint = &mut ctx.accounts.parent_mint;
+    let parent_metadata = &mut ctx.accounts.parent_metadata;
+    let child_token = &mut ctx.accounts.child_token;
+    let child_mint = &mut ctx.accounts.child_mint;
+    let child_metadata = &mut ctx.accounts.child_metadata;
+    let children_metadata = &mut ctx.accounts.children_metadata;
+    let token_program = &mut ctx.accounts.token_program;
+    let old_root_owner = &mut ctx.accounts.old_root_owner;
+
+    if pubkey_array_len(&child_metadata.immediate_children) > 0 {
+        panic!("handle_deal_single_new_root failed");
+    }
+
+    let new_root_finished = true;
+
+    if new_root_finished {
+        pubkey_array_remove(&mut parent_metadata.immediate_children, child_mint.key());
+        let seeds = &[
+            &CHILDREN_PDA_SEED[..],
+            parent_mint.to_account_info().key.as_ref(),
+            child_mint.to_account_info().key.as_ref(),
+            &[children_metadata.bump],
+        ];
+        token::set_authority(
+            into_set_authority_context(
+                token_program.to_account_info(), 
+                child_token.to_account_info(), 
+                children_metadata.to_account_info()
+            ).with_signer(&[&seeds[..]]),
+            AuthorityType::AccountOwner,
+            Some(old_root_owner.owner),
+        )?;
+        children_metadata.close(current_owner.to_account_info())?;    
+        child_metadata.height -= 1;
+
+        let all_finished = pubkey_array_all_empty(& parent_metadata.immediate_children);
+        if all_finished {
+            let seeds = &[
+                &PARENT_PDA_SEED[..],
+                parent_mint.to_account_info().key.as_ref(),
+                &[parent_metadata.bump],
+            ];
+            token::burn(
+                into_burn_context(
+                    token_program.to_account_info(), 
+                    parent_mint.to_account_info(), 
+                    parent_token.to_account_info(), 
+                    parent_metadata.to_account_info()
+                ).with_signer(&[&seeds[..]]), 
+                parent_token.amount)?;
+            parent_metadata.close(current_owner.to_account_info())?;    
+            old_root_owner.close(current_owner.to_account_info())?;
+        }
+    }
+
     Ok(())
 }
 
@@ -214,34 +362,69 @@ pub struct StartBranch<'info> {
     #[account(mut)]
     pub child_mint: Account<'info, Mint>,
 
-    #[account(
+    #[account(mut,
         constraint = parent_metadata.is_burnt == true,
         constraint = parent_token.mint == parent_mint.key(),
         constraint = child_token.mint == child_mint.key(),
         seeds = [PARENT_PDA_SEED, parent_mint.key().as_ref()], bump,
     )]
-    pub parent_metadata : Account<'info, ParentMetadata>,
+    pub parent_metadata : Box<Account<'info, ParentMetadata>>,
     #[account(
         init_if_needed,
         payer = current_owner,
         space = size_of::<ParentMetadata>() + 8,
         seeds = [PARENT_PDA_SEED, child_mint.key().as_ref()], bump,
     )]
-    pub child_metadata : Account<'info, ParentMetadata>,
+    pub child_metadata : Box<Account<'info, ParentMetadata>>,
 
-    #[account(
+    #[account(mut,
         constraint = children_metadata.is_mutated == false,
         seeds = [CHILDREN_PDA_SEED, parent_mint.key().as_ref(), child_mint.key().as_ref()], bump,
     )]
-    pub children_metadata : Account<'info, ChildrenMetadataV2>,
+    pub children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
     
+    #[account(mut)]
+    pub grandson_mint: Account<'info, Mint>,
+    #[account(
+        init_if_needed,
+        payer = current_owner,
+        space = size_of::<ParentMetadata>() + 8,
+        seeds = [PARENT_PDA_SEED, grandson_mint.key().as_ref()], bump,
+    )]
+    pub grandson_metadata : Box<Account<'info, ParentMetadata>>,
+    #[account(mut,
+        seeds = [CHILDREN_PDA_SEED, child_mint.key().as_ref(), grandson_mint.key().as_ref()], bump,
+    )]
+    pub grandson_children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
+
     #[account(
         init,
         payer = current_owner,
         space = size_of::<CrankMetadata>() + 8,
-        seeds = [CRANK_PDA_SEED, child_mint.key().as_ref()], bump,
+        seeds = [CRANK_PDA_SEED, grandson_mint.key().as_ref()], bump,
     )]
-    pub crank_metadata : Account<'info, CrankMetadata>,
+    pub crank_metadata : Box<Account<'info, CrankMetadata>>,
+
+    #[account(
+        init_if_needed, 
+        payer = current_owner,
+        space = size_of::<NewRootInfo>() + 8,
+        seeds = [b"new-root-info-seed", child_mint.key().as_ref()], bump,
+    )]
+    pub new_root_info: Box<Account<'info, NewRootInfo>>,
+    
+    #[account(
+        init, 
+        payer = current_owner,
+        space = size_of::<BranchInfo>() + 8,
+        seeds = [b"branch-info-seed", child_mint.key().as_ref(), grandson_mint.key().as_ref()], bump,
+    )]
+    pub branch_info: Box<Account<'info, BranchInfo>>,
+
+    #[account(mut,
+        seeds = [b"root-owner-seed", parent_mint.key().as_ref()], bump,
+    )]
+    pub old_root_owner: Box<Account<'info, RootOwner>>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -261,21 +444,32 @@ pub fn handle_start_branch(ctx: Context<StartBranch>) -> Result<()> {
     let crank_metadata = &mut ctx.accounts.crank_metadata;
     let token_program = &mut ctx.accounts.token_program;
 
-    if children_metadata.is_mutated {
-        panic!("handle_start_branch");        
+    let grandson_metadata = &mut ctx.accounts.grandson_metadata;
+    let grandson_children_metadata = &mut ctx.accounts.grandson_children_metadata;
+    let new_root_info = &mut ctx.accounts.new_root_info;
+    let branch_info = &mut ctx.accounts.branch_info;
+    let old_root_owner = &mut ctx.accounts.old_root_owner;
+
+    grandson_children_metadata.root = grandson_children_metadata.key();
+    new_root_info.root = grandson_children_metadata.key();
+    grandson_metadata.height -= 1;
+
+    if pubkey_array_len(&grandson_metadata.immediate_children) > 0 {
+        pubkey_array_append(&grandson_metadata.immediate_children, &mut crank_metadata.not_processed_children);
+    } else {
+        branch_info.close(current_owner.to_account_info())?;
+        crank_metadata.close(current_owner.to_account_info())?;
+        new_root_info.branch_finished += 1;
     }
 
-    if pubkey_array_len(&child_metadata.immediate_children) > 0 {
-        children_metadata.is_mutated = true;
+    let mut new_root_finished = false;
+    if new_root_info.branch_finished == pubkey_array_len(&child_metadata.immediate_children) {
+        new_root_finished = true;
+    }
 
-        crank_metadata.tranfered_nft = child_mint.key();
-        crank_metadata.old_root_meta_data = parent_mint.key();
-        crank_metadata.new_root_meta_data = child_mint.key();
-    
-        pubkey_array_append(&child_metadata.immediate_children, &mut crank_metadata.not_processed_children);
-    } else {
+    if new_root_finished {
+        new_root_info.close(current_owner.to_account_info())?;
         pubkey_array_remove(&mut parent_metadata.immediate_children, child_mint.key());
-        children_metadata.is_mutated = false;
         let seeds = &[
             &CHILDREN_PDA_SEED[..],
             parent_mint.to_account_info().key.as_ref(),
@@ -289,11 +483,30 @@ pub fn handle_start_branch(ctx: Context<StartBranch>) -> Result<()> {
                 children_metadata.to_account_info()
             ).with_signer(&[&seeds[..]]),
             AuthorityType::AccountOwner,
-            Some(parent_token.owner),
+            Some(old_root_owner.owner),
         )?;
-        children_metadata.close(current_owner.to_account_info())?;    
-        child_metadata.close(current_owner.to_account_info())?;
-        crank_metadata.close(current_owner.to_account_info())?;
+
+        children_metadata.close(current_owner.to_account_info())?;
+        child_metadata.height -= 1;
+
+        let all_finished = pubkey_array_all_empty(& parent_metadata.immediate_children);
+        if all_finished {
+            let seeds = &[
+                &PARENT_PDA_SEED[..],
+                parent_mint.to_account_info().key.as_ref(),
+                &[parent_metadata.bump],
+            ];
+            token::burn(
+                into_burn_context(
+                    token_program.to_account_info(), 
+                    parent_mint.to_account_info(), 
+                    parent_token.to_account_info(), 
+                    parent_metadata.to_account_info()
+                ).with_signer(&[&seeds[..]]), 
+                parent_token.amount)?;
+            parent_metadata.close(current_owner.to_account_info())?;
+            old_root_owner.close(current_owner.to_account_info())?;
+        }
     }
 
     Ok(())
@@ -307,44 +520,61 @@ pub struct UpdateBranch<'info> {
     pub parent_mint: Account<'info, Mint>,
     #[account(mut)]
     pub child_mint: Account<'info, Mint>,
-    #[account(
+    #[account(mut,
         seeds = [PARENT_PDA_SEED, child_mint.key().as_ref()], bump,
     )]
-    pub child_metadata : Account<'info, ParentMetadata>,
-    #[account(
+    pub child_metadata : Box<Account<'info, ParentMetadata>>,
+    #[account(mut,
         seeds = [CHILDREN_PDA_SEED, parent_mint.key().as_ref(), child_mint.key().as_ref()], bump,
     )]
-    pub children_metadata : Account<'info, ChildrenMetadataV2>,
+    pub children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
 
     #[account(mut)]
     pub old_root_mint: Account<'info, Mint>,
     #[account(mut)]
     pub old_root_token: Account<'info, TokenAccount>,
-    #[account(
+    #[account(mut,
         constraint = old_root_metadata.is_burnt == true,
         seeds = [PARENT_PDA_SEED, old_root_mint.key().as_ref()], bump,
     )]
-    pub old_root_metadata : Account<'info, ParentMetadata>,
+    pub old_root_metadata : Box<Account<'info, ParentMetadata>>,
 
     #[account(mut)]
-    pub new_root_mint: Account<'info, Mint>,
+    pub new_root_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
-    pub new_root_token: Account<'info, TokenAccount>,
-    #[account(
+    pub new_root_token: Box<Account<'info, TokenAccount>>,
+    #[account(mut,
         seeds = [PARENT_PDA_SEED, new_root_mint.key().as_ref()], bump,
     )]
-    pub new_root_metadata : Account<'info, ParentMetadata>,
+    pub new_root_metadata : Box<Account<'info, ParentMetadata>>,
 
-    #[account(
-        constraint = root_children_metadata.is_mutated == true,
+    #[account(mut,
         seeds = [CHILDREN_PDA_SEED, old_root_mint.key().as_ref(), new_root_mint.key().as_ref()], bump,
     )]
-    pub root_children_metadata : Account<'info, ChildrenMetadataV2>,
+    pub root_children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
 
-    #[account(
-        seeds = [CRANK_PDA_SEED, new_root_mint.key().as_ref()], bump,
+    #[account(mut)]
+    pub grandson_mint: Account<'info, Mint>,
+
+    #[account(mut,
+        seeds = [CRANK_PDA_SEED, grandson_mint.key().as_ref()], bump,
     )]
-    pub crank_metadata : Account<'info, CrankMetadata>,
+    pub crank_metadata : Box<Account<'info, CrankMetadata>>,
+
+    #[account(mut,
+        seeds = [b"new-root-info-seed", new_root_mint.key().as_ref()], bump,
+    )]
+    pub new_root_info: Box<Account<'info, NewRootInfo>>,
+
+    #[account(mut,
+        seeds = [b"branch-info-seed", new_root_mint.key().as_ref(), grandson_mint.key().as_ref()], bump,
+    )]
+    pub branch_info: Box<Account<'info, BranchInfo>>,
+
+    #[account(mut,
+        seeds = [b"root-owner-seed", old_root_mint.key().as_ref()], bump,
+    )]
+    pub old_root_owner: Box<Account<'info, RootOwner>>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -366,87 +596,79 @@ pub fn handle_update_branch(ctx: Context<UpdateBranch>) -> Result<()>{
     let new_root_metadata = &mut ctx.accounts.new_root_metadata;
     let crank_metadata = &mut ctx.accounts.crank_metadata;
     let root_children_metadata = &mut ctx.accounts.root_children_metadata;
-
+    
     let token_program = &mut ctx.accounts.token_program;
 
-    if !crank_metadata.not_processed_children[0].eq(&child_mint.key()) {
+    let new_root_info = &mut ctx.accounts.new_root_info;
+    let branch_info = &mut ctx.accounts.branch_info;
+    let old_root_owner = &mut ctx.accounts.old_root_owner;
+
+    let pos = pubkey_array_find(&crank_metadata.not_processed_children, child_mint.key());
+    if pos == u32::MAX {
         panic!("handle_update_branch");
     }
-    children_metadata.root = new_root_metadata.key();
-    crank_metadata.not_processed_children[0] = Pubkey::default();
+
+    children_metadata.root = new_root_info.root;
+    child_metadata.height -= 1;
+
+    crank_metadata.not_processed_children[pos as usize] = Pubkey::default();
     pubkey_array_append(& child_metadata.immediate_children, &mut crank_metadata.not_processed_children);
 
     let branch_finished = pubkey_array_all_empty(& crank_metadata.not_processed_children);
+
     if branch_finished {
-        pubkey_array_remove(&mut old_root_metadata.immediate_children, new_root_mint.key());
-        root_children_metadata.is_mutated = false;
-
-        let seeds = &[
-            &CHILDREN_PDA_SEED[..],
-            old_root_mint.to_account_info().key.as_ref(),
-            new_root_mint.to_account_info().key.as_ref(),
-            &[root_children_metadata.bump],
-        ];
-        token::set_authority(
-            into_set_authority_context(
-                token_program.to_account_info(), 
-                new_root_token.to_account_info(), 
-                root_children_metadata.to_account_info()
-            ).with_signer(&[&seeds[..]]),
-            AuthorityType::AccountOwner,
-            Some(old_root_token.owner),
-        )?;
-
-        root_children_metadata.close(current_owner.to_account_info())?;    
+        new_root_info.branch_finished += 1;
         crank_metadata.close(current_owner.to_account_info())?;
+        branch_info.close(current_owner.to_account_info())?;
 
-        let all_finished = pubkey_array_all_empty(& old_root_metadata.immediate_children);
-        if all_finished {
+        let mut new_root_finished = false;
+        if new_root_info.branch_finished == pubkey_array_len(&new_root_metadata.immediate_children) {
+            new_root_finished = true;
+        }
+
+        if new_root_finished {
+            new_root_info.close(current_owner.to_account_info())?;
+            pubkey_array_remove(&mut old_root_metadata.immediate_children, new_root_mint.key());
             let seeds = &[
-                &PARENT_PDA_SEED[..],
+                &CHILDREN_PDA_SEED[..],
                 old_root_mint.to_account_info().key.as_ref(),
-                &[old_root_metadata.bump],
+                new_root_mint.to_account_info().key.as_ref(),
+                &[root_children_metadata.bump],
             ];
-            token::burn(
-                into_burn_context(
+            token::set_authority(
+                into_set_authority_context(
                     token_program.to_account_info(), 
-                    old_root_mint.to_account_info(), 
-                    old_root_token.to_account_info(), 
-                    old_root_metadata.to_account_info()
-                ).with_signer(&[&seeds[..]]), 
-                old_root_token.amount)?;
-            old_root_metadata.close(current_owner.to_account_info())?;    
+                    new_root_token.to_account_info(), 
+                    root_children_metadata.to_account_info()
+                ).with_signer(&[&seeds[..]]),
+                AuthorityType::AccountOwner,
+                Some(old_root_owner.owner),
+            )?;
+            root_children_metadata.close(current_owner.to_account_info())?;    
+            new_root_metadata.height -= 1;
+
+            let all_finished = pubkey_array_all_empty(& old_root_metadata.immediate_children);
+            if all_finished {
+                let seeds = &[
+                    &PARENT_PDA_SEED[..],
+                    old_root_mint.to_account_info().key.as_ref(),
+                    &[old_root_metadata.bump],
+                ];
+                token::burn(
+                    into_burn_context(
+                        token_program.to_account_info(), 
+                        old_root_mint.to_account_info(), 
+                        old_root_token.to_account_info(), 
+                        old_root_metadata.to_account_info()
+                    ).with_signer(&[&seeds[..]]), 
+                    old_root_token.amount)?;
+                old_root_metadata.close(current_owner.to_account_info())?;    
+                old_root_owner.close(current_owner.to_account_info())?;
+            }
         }
     }
 
     Ok(())
 }
 
-// impl<'info> UpdateBranch<'info> {
-//     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
-//         let cpi_accounts = SetAuthority {
-//             account_or_mint: self.new_root_token.to_account_info().clone(),
-//             current_authority: self.root_children_metadata.to_account_info().clone(),
-//         };
-//         CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
-//     }
-//     fn into_burn_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
-//         let cpi_accounts = Burn {
-//             mint: self.old_root_mint.to_account_info().clone(),
-//             to: self.old_root_token.to_account_info().clone(),
-//             authority: self.old_root_metadata.to_account_info().clone(),
-//         };
-//         CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
-//     }
-// }
-
-// impl<'info> StartBurn<'info> {
-//     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
-//         let cpi_accounts = SetAuthority {
-//             account_or_mint: self.root_token.to_account_info(),
-//             current_authority: self.current_owner.to_account_info(),
-//         };
-//         CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
-//     }
-// }
 

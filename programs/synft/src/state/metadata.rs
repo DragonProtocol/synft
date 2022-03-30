@@ -44,7 +44,7 @@ pub struct CrankMetadata {
     pub tranfered_nft: Pubkey, // nft mint account
     pub old_root_meta_data: Pubkey, // old root meta data
     pub new_root_meta_data: Pubkey, 
-    pub not_processed_children: [Pubkey; 32], // children nodes that have not been processed
+    pub not_processed_children: [Pubkey; 8], // children nodes that have not been processed
 }
 
 impl CrankMetadata{
