@@ -17,6 +17,7 @@ import {
   setAuthority,
   AuthorityType,
   getOrCreateAssociatedTokenAccount,
+  getAssociatedTokenAddress,
 } from "@solana/spl-token";
 
 import { Synft } from "../target/types/synft";
@@ -25,6 +26,7 @@ import { token } from "@project-serum/anchor/dist/cjs/utils";
 
 import axios from "axios";
 import { programs } from "@metaplex/js";
+
 
 const {
   metadata: { Metadata },
@@ -510,7 +512,7 @@ describe("synft v2 burn", () => {
     const [pda, ] = await PublicKey.findProgramAddress(arr, program.programId);
     let data = await program.account[account].fetch(pda);
     data.address = pda;
-    console.log(title, account, data);
+    // console.log(title, account, data);
     return data;
   }
 
@@ -530,22 +532,88 @@ describe("synft v2 burn", () => {
     return await getAccount(connection, account); 
   }
 
+  async function fetchAllParentMetadataPDAs() {
+    const Base58 = require('base58');
+
+    const filter: any = [];
+    filter.push({
+      memcmp: {
+        offset: 8+1, 
+        bytes: Base58.int_to_base58(1),
+      },
+    });
+    const pdas = await program.account.parentMetadata.all(filter);
+    return pdas;
+  }
+
+  const pubkey_array_len = function(a) {
+    let cnt = 0
+    for(const v of a) {
+      if(v.toString() != PublicKey.default.toString()) { cnt += 1; }
+    }
+    return cnt;
+  }
+
+  async function doCrank() {
+    const pdas = await fetchAllParentMetadataPDAs();
+    console.log("pdas:", pdas);
+
+    const doOne = async function(info) {
+      const data = info.account;
+      console.log("data:", data);
+      const tokenAccount = await _getAssociatedTokenAddress(data.selfMint, user1);
+      const pubkey = info.publicKey;
+      
+      for(const child of data.immediateChildren) {
+        if(child.toString() != PublicKey.default.toString()) {
+          const childData = await fetchAccount("crank script", "parent-metadata-seed", child, null, "parentMetadata");
+          const childTokenAccount = await _getAssociatedTokenAddress(childData.selfMint, user1);
+          if(0 == pubkey_array_len(childData.immediateChildren)) {
+            await deal_single_new_root(data.selfMint, childData.selfMint, {address: tokenAccount}, {address: childTokenAccount});
+          } else {
+            for(const grandson of childData.immediateChildren) {
+              if(grandson.toString() != PublicKey.default.toString()) {
+                await start_branch(data.selfMint, childData.selfMint, {address: tokenAccount}, {address: childTokenAccount}, grandson);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    for(const pda of pdas) {
+      await doOne(pda);
+    }
+  }
+
   it("start burn", async () => {
+    console.log("user1:", user1.publicKey);
+    console.log("mint11:", mint11);
+    console.log("mint12:", mint12);
+    console.log("mint13:", mint13);
+    console.log("token11:", tokenAccount11.address);
+    console.log("token12:", tokenAccount12.address);
+    console.log("token13:", tokenAccount13.address);
+    
     await start_burn(mint11, tokenAccount11);
   });
 
-  it("deal single new root", async () => {
-    await deal_single_new_root(mint11, mint13, tokenAccount11, tokenAccount13);
-    await fetchAccount("mint11 parent metadata", "parent-metadata-seed", mint11, null, "parentMetadata");
+  it("crank scripts", async () => {
+    await doCrank();
   });
 
-  it("start branch 1", async () => {
-    await start_branch(mint11, mint12, tokenAccount11, tokenAccount12, mint15);
-  });
+  // it("deal single new root", async () => {
+  //   await deal_single_new_root(mint11, mint13, tokenAccount11, tokenAccount13);
+  //   await fetchAccount("mint11 parent metadata", "parent-metadata-seed", mint11, null, "parentMetadata");
+  // });
 
-  it("start branch 2", async () => {
-    await start_branch(mint11, mint12, tokenAccount11, tokenAccount12, mint16);
-  });
+  // it("start branch 1", async () => {
+  //   await start_branch(mint11, mint12, tokenAccount11, tokenAccount12, mint15);
+  // });
+
+  // it("start branch 2", async () => {
+  //   await start_branch(mint11, mint12, tokenAccount11, tokenAccount12, mint16);
+  // });
 
   it("do all assert", async () => {
     const p12 = await fetchAccount("mint12 parent metadata", "parent-metadata-seed", mint12, null, "parentMetadata");
@@ -578,6 +646,7 @@ describe("synft v2 burn", () => {
     assert.ok(checkNonExistAccount("13 children metadata", "children-of", mint11, mint13, "childrenMetadataV2"));
   });
 
+
   // it("update branch 1", async () => {
   //   await update_branch(mint12, mint15, mint11, mint12, tokenAccount11, tokenAccount12);
   // });
@@ -605,6 +674,14 @@ async function _getOrCreateAssociatedTokenAccount(payer, mint, user) {
   return await getOrCreateAssociatedTokenAccount(
     anchor.getProvider().connection,
     payer,
+    mint,
+    user.publicKey,
+    true
+  );
+}
+
+async function _getAssociatedTokenAddress(mint, user) {
+  return await getAssociatedTokenAddress(
     mint,
     user.publicKey,
     true
