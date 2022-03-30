@@ -307,7 +307,7 @@ describe("synft v2 burn", () => {
 
     const [_crankMetadata, ] = await PublicKey.findProgramAddress(
       [
-        Buffer.from(anchor.utils.bytes.utf8.encode("crank-pda-seed")),
+        Buffer.from(anchor.utils.bytes.utf8.encode("crank-seed")),
         mintGrandson.toBuffer(),
       ],
       program.programId

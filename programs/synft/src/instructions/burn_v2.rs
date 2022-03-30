@@ -353,14 +353,14 @@ pub struct StartBranch<'info> {
     pub current_owner: Signer<'info>,
 
     #[account(mut)]
-    pub parent_token: Account<'info, TokenAccount>,
+    pub parent_token: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub child_token: Account<'info, TokenAccount>,
+    pub child_token: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub parent_mint: Account<'info, Mint>,
+    pub parent_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
-    pub child_mint: Account<'info, Mint>,
+    pub child_mint: Box<Account<'info, Mint>>,
 
     #[account(mut,
         constraint = parent_metadata.is_burnt == true,
@@ -384,7 +384,7 @@ pub struct StartBranch<'info> {
     pub children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
     
     #[account(mut)]
-    pub grandson_mint: Account<'info, Mint>,
+    pub grandson_mint: Box<Account<'info, Mint>>,
     #[account(
         init_if_needed,
         payer = current_owner,
