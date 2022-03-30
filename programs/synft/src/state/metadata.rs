@@ -6,7 +6,7 @@ pub const SPL_TOKEN_PDA_SEED: &[u8] = b"fungible-token-seed";
 pub const SYNTHETIC_NFT_MINT_SEED: &[u8] = b"synthetic-nft-mint-seed";
 pub const SYNTHETIC_NFT_ACOUNT_SEED: &[u8] = b"synthetic-nft-account-seed";
 pub const SOL_PDA_SEED: &[u8] = b"sol-seed";
-pub const CRANK_PDA_SEED: &[u8] = b"crank-pda-seed";
+pub const CRANK_PDA_SEED: &[u8] = b"crank-seed";
 pub const TREE_LEVEL_HEIGHT_LIMIT: u8 = 3;
 
 #[account]
@@ -21,7 +21,7 @@ pub struct ChildrenMetadata {
 
 #[account]
 pub struct ChildrenMetadataV2 {
-    // parent, root, mint refer to "mint"
+    // parent, child refer to "mint"
     pub child: Pubkey,
     pub parent: Pubkey,
     pub root: Pubkey,
@@ -42,9 +42,15 @@ pub enum ChildType {
 #[account]
 pub struct CrankMetadata {
     pub tranfered_nft: Pubkey, // nft mint account
+<<<<<<< HEAD
     pub old_root_meta_data: Pubkey, // old root meta data
     pub new_root_meta_data: Pubkey, 
     pub not_processed_children: [Pubkey; 8], // children nodes that have not been processed
+=======
+    pub old_children_root_meta_data: Pubkey, // old root meta data
+    pub closed_children_meta_data: Pubkey,  // need to close
+    pub not_processed_children: [Pubkey; 32], // children nodes that have not been processed
+>>>>>>> F_synft2.0
 }
 
 impl CrankMetadata{
@@ -63,6 +69,7 @@ pub struct ParentMetadata {
     pub bump: u8,
     pub is_burnt: bool,
     pub height: u8,
+    pub self_mint: Pubkey, //pointer to self
     pub immediate_children: [Pubkey; 3], //pointer to immediate children
 }
 
@@ -92,6 +99,8 @@ pub enum ErrorCode {
     InvalidExtractAttempt,
     #[msg("Wrong type of burn instruction for the token")]
     InvalidBurnType,
-    #[msg("Wrong opration of crank instruction for the token")]
-    InvalidTransferCrank
+    #[msg("Wrong opration of crank process instruction for the token")]
+    InvalidTransferCrankProcess,
+    #[msg("Wrong opration of crank end instruction for the token")]
+    InvalidTransferCrankEnd
 }
