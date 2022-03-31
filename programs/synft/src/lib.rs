@@ -4,7 +4,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("HxtTmrta1Ng5NmttjijHoJibUQQFzNaYwQigq63P5Wyq");
+declare_id!("3VUMLpWXZie1ruVgme2ZzeJ6BSY8c12dGNTRrKNRrpih");
 
 #[program]
 pub mod synft {
