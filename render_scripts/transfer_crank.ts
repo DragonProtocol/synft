@@ -21,7 +21,8 @@ async function main() {
     const [crankPda, crankBump] = await findCrankMetaPda(pda.account.child)
 
     let parentMeta = await program.account.parentMetadata.fetch(parentPda);
-    if (parentMeta.immediateChildren.every(child => child == PublicKey.default)) {
+    if (parentMeta.immediateChildren.every(child => child.toBase58() == PublicKey.default.toBase58())) {
+      console.log("No children branch, parentMeta:",parentMeta);
       // 1. 没有孩子的 执行init、end
       //   a. root指向自己的，说明是前两层
       //   b. root不指向自己，说明是后两层
@@ -63,6 +64,7 @@ async function main() {
     } else {
       // 2.有孩子的
       //   a. 有两层， 需要执行init、process、end
+      console.log("Own children branch, parentMeta:",parentMeta);
       let initTx = await program.rpc.transferCrankInitV2(
         {
           accounts: {
@@ -132,6 +134,7 @@ async function fetchAllchildrenMetadataV2PDAs() {
     },
   });
   const pdas = await program.account.childrenMetadataV2.all(filter);
+  console.log("NFT ready for processing, length:", pdas.length);
   return pdas;
 }
 main();
