@@ -41,7 +41,6 @@ pub fn handler(ctx: Context<TransferCrankProcess>) -> Result<()> {
 
     // only for three levels
     ctx.accounts.children_meta.root = *ctx.accounts.children_meta.to_account_info().key;
-    ctx.accounts.children_meta.parent = *ctx.accounts.child_mint_account.to_account_info().key;
     ctx.accounts.parent_meta.height = ctx.accounts.parent_meta_of_parent.height + 1;
 
     // add children to crank
