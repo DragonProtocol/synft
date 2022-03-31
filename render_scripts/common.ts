@@ -11,8 +11,8 @@ function initSynftProgram() {
   );
   const rpcDevUrl = "https://api.devnet.solana.com";
   const rpcLocalUrl = "http://localhost:8899";
-  const rpcUrl = rpcDevUrl;
-  // const rpcUrl = rpcLocalUrl;
+  // const rpcUrl = rpcDevUrl;
+  const rpcUrl = rpcLocalUrl;
   const processed = "processed";
   const connection = new web3.Connection(
     rpcUrl,

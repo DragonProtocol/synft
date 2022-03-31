@@ -61,7 +61,6 @@ impl<'info> TransferChildNftV2<'info> {
 }
 
 pub fn handler(ctx: Context<TransferChildNftV2>, _bump: u8) -> Result<()> {
-    ctx.accounts.root_meta.is_mutated = true;
     let seeds = &[
         &CHILDREN_PDA_SEED[..],
         ctx.accounts

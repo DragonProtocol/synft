@@ -610,7 +610,7 @@ describe("synft v2", () => {
     assert.ok(parentMetaNft5.height == 3);
   });
 
-  // Transfer NFT, transfer out nft5 to user2
+  // Transfer NFT, transfer out nft4 to user2
   // user1        user2           
   //  |             |     
   // nft3         nft4    
@@ -832,7 +832,7 @@ describe("synft v2", () => {
     assert.ok(solAccountAfter === null);
   });
 
-  it("Initialize a tree with the most nfts", async () => {
+  it("Initialize a tree ", async () => {
     mint11 = await _createMint(payer, mintAuthority);
     mint12 = await _createMint(payer, mintAuthority);
     mint13 = await _createMint(payer, mintAuthority);
@@ -840,10 +840,10 @@ describe("synft v2", () => {
     mint15 = await _createMint(payer, mintAuthority);
     mint16 = await _createMint(payer, mintAuthority);
     mint17 = await _createMint(payer, mintAuthority);
-    // mint18 = await _createMint(payer, mintAuthority);
+    mint18 = await _createMint(payer, mintAuthority);
     // mint19 = await _createMint(payer, mintAuthority);
     // mint20 = await _createMint(payer, mintAuthority);
-    // mint21 = await _createMint(payer, mintAuthority);
+    mint21 = await _createMint(payer, mintAuthority);
     // mint22 = await _createMint(payer, mintAuthority);
     // mint23 = await _createMint(payer, mintAuthority);
 
@@ -854,10 +854,10 @@ describe("synft v2", () => {
     tokenAccount15 = await _getOrCreateAssociatedTokenAccount(payer, mint15, user1);
     tokenAccount16 = await _getOrCreateAssociatedTokenAccount(payer, mint16, user1);
     tokenAccount17 = await _getOrCreateAssociatedTokenAccount(payer, mint17, user1);
-    // tokenAccount18 = await _getOrCreateAssociatedTokenAccount(payer, mint18, user1);
+    tokenAccount18 = await _getOrCreateAssociatedTokenAccount(payer, mint18, user1);
     // tokenAccount19 = await _getOrCreateAssociatedTokenAccount(payer, mint19, user1);
     // tokenAccount20 = await _getOrCreateAssociatedTokenAccount(payer, mint20, user1);
-    // tokenAccount21 = await _getOrCreateAssociatedTokenAccount(payer, mint21, user1);
+    tokenAccount21 = await _getOrCreateAssociatedTokenAccount(payer, mint21, user1);
     // tokenAccount22 = await _getOrCreateAssociatedTokenAccount(payer, mint22, user1);
     // tokenAccount23 = await _getOrCreateAssociatedTokenAccount(payer, mint23, user1);
 
@@ -871,7 +871,7 @@ describe("synft v2", () => {
     // await _mintTo(payer, mint18, tokenAccount18, mintAuthority, 1);
     // await _mintTo(payer, mint19, tokenAccount19, mintAuthority, 1);
     // await _mintTo(payer, mint20, tokenAccount20, mintAuthority, 1);
-    // await _mintTo(payer, mint21, tokenAccount21, mintAuthority, 1);
+    await _mintTo(payer, mint21, tokenAccount21, mintAuthority, 1);
     // await _mintTo(payer, mint22, tokenAccount22, mintAuthority, 1);
     // await _mintTo(payer, mint23, tokenAccount23, mintAuthority, 1);
 
@@ -884,16 +884,17 @@ describe("synft v2", () => {
     // await injectNonRoot(tokenAccount11, mint11, tokenAccount13, mint13, tokenAccount18, mint18, program, user1);
     // await injectNonRoot(tokenAccount11, mint11, tokenAccount13, mint13, tokenAccount19, mint19, program, user1);
     // await injectNonRoot(tokenAccount11, mint11, tokenAccount13, mint13, tokenAccount20, mint20, program, user1);
-    // await injectNonRoot(tokenAccount11, mint11, tokenAccount14, mint14, tokenAccount21, mint21, program, user1);
+    await injectNonRoot(tokenAccount11, mint11, tokenAccount14, mint14, tokenAccount21, mint21, program, user1);
     // await injectNonRoot(tokenAccount11, mint11, tokenAccount14, mint14, tokenAccount22, mint22, program, user1);
     // await injectNonRoot(tokenAccount11, mint11, tokenAccount14, mint14, tokenAccount23, mint23, program, user1);
   });
 
   // transfer tokenAccount12 and crank
-  it("transfer crank", async () => {
+  it("transfer tokenAccount12 and crank", async () => {
     let connection = anchor.getProvider().connection;
     const [_root_metadata_pda, _root_metadata_bump] = await _findChildrenMetaPda(mint11, mint12, program);
 
+    // transfer 
     let transferTx = await program.rpc.transferChildNftV2(_root_metadata_bump,
       {
         accounts: {
@@ -1067,11 +1068,188 @@ describe("synft v2", () => {
         signers: [user1],
       }
     );
-
-    let rootMeta = await program.account.childrenMetadata.fetchNullable(_root_metadata_pda);
+    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(_root_metadata_pda);
     assert.isNull(rootMeta);
     let crankMeta = await program.account.crankMetadata.fetchNullable(_crank_metadata_pda);
     assert.isNull(crankMeta);
+  });
+
+  it("transfer tokenAccount13 and crank", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_root_metadata_pda, _root_metadata_bump] = await _findChildrenMetaPda(mint11, mint13, program);
+
+    // transfer 
+    let transferTx = await program.rpc.transferChildNftV2(_root_metadata_bump,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          childTokenAccount: tokenAccount13.address,
+          childMintAccount: mint13,
+          rootTokenAccount: tokenAccount11.address,
+          rootMintAccount: mint11,
+          childrenMetaOfParent: _root_metadata_pda,
+          parentMintAccount: mint11,
+          rootMeta: _root_metadata_pda,
+          receiverAccount: user2.publicKey,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      }
+    );
+
+
+    // crank init
+    const [_nft11_parent_metadata_pda, _nft11_parent_metadata_bump] = await _findParentMetaPda(mint11, program);
+    const [_nft13_parent_metadata_pda, _nft13_parent_metadata_bump] = await _findParentMetaPda(mint13, program);
+    const [_crank_metadata_pda, _crank_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("crank-seed")),
+        mint13.toBuffer(),
+      ],
+      program.programId
+    );
+    let initTx = await program.rpc.transferCrankInitV2(
+      {
+        accounts: {
+          operator: user1.publicKey,
+          childMintAccount: mint13,
+          childrenMetaOfParent: _root_metadata_pda,
+          childrenMetaOfRoot: _root_metadata_pda,
+          parentMeta: _nft13_parent_metadata_pda,
+          parentMetaOfParent: _nft11_parent_metadata_pda,
+          crankMeta: _crank_metadata_pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [user1],
+      }
+    );
+    let parentMetaNft11 = await program.account.parentMetadata.fetch(
+      _nft11_parent_metadata_pda
+    );
+    let crankMetadata = await program.account.crankMetadata.fetch(
+      _crank_metadata_pda
+    );
+    parentMetaNft11.immediateChildren.forEach(element => assert.ok(element.toBase58() != mint13.toBase58()));
+    assert.ok(crankMetadata.tranferedNft.toString() == mint13.toString());
+    assert.ok(crankMetadata.oldChildrenRootMetaData.toString() == _root_metadata_pda.toString());
+    assert.ok(crankMetadata.closedChildrenMetaData.toString() == _root_metadata_pda.toString());
+
+    // crank end
+    let endTx = await program.rpc.transferCrankEndV2(
+      {
+        accounts: {
+          operator: user1.publicKey,
+          childrenMetaOfRoot: _root_metadata_pda,
+          childrenMetaOfClose: _root_metadata_pda,
+          parentMeta: _nft13_parent_metadata_pda,
+          crankMeta: _crank_metadata_pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [user1],
+      }
+    );
+
+    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(_root_metadata_pda);
+    assert.isNull(rootMeta);
+    let crankMeta = await program.account.crankMetadata.fetchNullable(_crank_metadata_pda);
+    assert.isNull(crankMeta);
+  });
+
+  it("transfer tokenAccount21 and crank", async () => {
+    let connection = anchor.getProvider().connection;
+    const [_root_metadata_pda, _root_metadata_bump] = await _findChildrenMetaPda(mint11, mint14, program);
+    const [_children_metadata_of_parent_pda, _children_metadata_of_parent_bump] = await _findChildrenMetaPda(mint14, mint21, program);
+
+    // transfer 
+    let transferTx = await program.rpc.transferChildNftV2(_children_metadata_of_parent_bump,
+      {
+        accounts: {
+          currentOwner: user1.publicKey,
+          childTokenAccount: tokenAccount21.address,
+          childMintAccount: mint21,
+          rootTokenAccount: tokenAccount11.address,
+          rootMintAccount: mint11,
+          childrenMetaOfParent: _children_metadata_of_parent_pda,
+          parentMintAccount: mint14,
+          rootMeta: _root_metadata_pda,
+          receiverAccount: user2.publicKey,
+
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        signers: [user1],
+      }
+    );
+
+    // await new Promise(f => setTimeout(f, 10000000));
+    // crank init
+    const [_children_metadata_pda_14_21, _children_metadata_bump_14_21] = await _findChildrenMetaPda(mint14, mint21, program);
+    const [_nft11_parent_metadata_pda, _nft11_parent_metadata_bump] = await _findParentMetaPda(mint11, program);
+    const [_nft14_parent_metadata_pda, _nft14_parent_metadata_bump] = await _findParentMetaPda(mint14, program);
+    const [_nft21_parent_metadata_pda, _nft21_parent_metadata_bump] = await _findParentMetaPda(mint21, program);
+    const [_crank_metadata_pda, _crank_metadata_bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("crank-seed")),
+        mint21.toBuffer(),
+      ],
+      program.programId
+    );
+    let initTx = await program.rpc.transferCrankInitV2(
+      {
+        accounts: {
+          operator: user1.publicKey,
+          childMintAccount: mint21,
+          childrenMetaOfParent: _children_metadata_pda_14_21,
+          childrenMetaOfRoot: _root_metadata_pda,
+          parentMeta: _nft21_parent_metadata_pda,
+          parentMetaOfParent: _nft14_parent_metadata_pda,
+          crankMeta: _crank_metadata_pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [user1],
+      }
+    );
+
+    let parentMetaNft14 = await program.account.parentMetadata.fetch(
+      _nft11_parent_metadata_pda
+    );
+    let crankMetadata = await program.account.crankMetadata.fetch(
+      _crank_metadata_pda
+    );
+    parentMetaNft14.immediateChildren.forEach(element => assert.ok(element.toBase58() != mint21.toBase58()));
+    assert.ok(crankMetadata.tranferedNft.toString() == mint21.toString());
+    assert.ok(crankMetadata.oldChildrenRootMetaData.toString() == _root_metadata_pda.toString());
+    assert.ok(crankMetadata.closedChildrenMetaData.toString() == _children_metadata_pda_14_21.toString());
+
+    // crank end
+    let endTx = await program.rpc.transferCrankEndV2(
+      {
+        accounts: {
+          operator: user1.publicKey,
+          childrenMetaOfRoot: _root_metadata_pda,
+          childrenMetaOfClose: _children_metadata_pda_14_21,
+          parentMeta: _nft21_parent_metadata_pda,
+          crankMeta: _crank_metadata_pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [user1],
+      }
+    );
+
+    let meta_14_21 = await program.account.childrenMetadataV2.fetchNullable(_children_metadata_pda_14_21);
+    assert.isNull(meta_14_21);
+    let crankMeta = await program.account.crankMetadata.fetchNullable(_crank_metadata_pda);
+    assert.isNull(crankMeta);
+    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(_root_metadata_pda);
+    assert.isOk(!rootMeta.isMutated);
   });
 });
 

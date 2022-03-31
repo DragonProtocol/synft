@@ -1,6 +1,4 @@
-use crate::state::metadata::{
-    ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata,
-};
+use crate::state::metadata::{ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata};
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
 
@@ -28,6 +26,7 @@ pub struct TransferCrankEnd<'info> {
     #[account(
         mut,
         constraint = crank_meta.old_children_root_meta_data == children_meta_of_root.key(),
+        constraint = !crank_meta.has_children(),
     )]
     pub crank_meta: Box<Account<'info, CrankMetadata>>,
 
@@ -40,14 +39,12 @@ pub fn handler(ctx: Context<TransferCrankEnd>) -> Result<()> {
         return err!(ErrorCode::InvalidTransferCrankEnd);
     }
 
-    if !ctx.accounts.crank_meta.has_children() {
-        ctx.accounts.children_meta_of_root.is_mutated = false;
-        ctx.accounts
-            .crank_meta
-            .close(ctx.accounts.operator.to_account_info())?;
-        ctx.accounts
-            .children_meta_of_close
-            .close(ctx.accounts.operator.to_account_info())?;
-    }
+    ctx.accounts.children_meta_of_root.is_mutated = false;
+    ctx.accounts
+        .crank_meta
+        .close(ctx.accounts.operator.to_account_info())?;
+    ctx.accounts
+        .children_meta_of_close
+        .close(ctx.accounts.operator.to_account_info())?;
     Ok(())
 }

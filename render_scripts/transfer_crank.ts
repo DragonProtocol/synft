@@ -1,9 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
 import { SynftProgram as program, findParentMetaPda, findChildrenMetaPda, findCrankMetaPda, UserKeypair } from "./common";
 import * as anchor from "@project-serum/anchor";
-async function main() {
+async function doTransferCrank() {
   let mutatedPdas = await fetchAllchildrenMetadataV2PDAs();
-  if (mutatedPdas.length == 0){
+  if (mutatedPdas.length == 0) {
     console.log("There're no transfering nfts now.");
   }
   let crankMutatedPdas = mutatedPdas.filter(pda => {
@@ -22,7 +22,7 @@ async function main() {
 
     let parentMeta = await program.account.parentMetadata.fetch(parentPda);
     if (parentMeta.immediateChildren.every(child => child.toBase58() == PublicKey.default.toBase58())) {
-      console.log("No children branch, parentMeta:",parentMeta);
+      console.log("No children branch, parentMeta:", parentMeta);
       // 1. 没有孩子的 执行init、end
       //   a. root指向自己的，说明是前两层
       //   b. root不指向自己，说明是后两层
@@ -44,15 +44,13 @@ async function main() {
       );
       console.log("initTx:", initTx);
 
-      const anyLeaf = parentMeta.immediateChildren.filter(child => child.toBase58() != PublicKey.default.toBase58())[0];
-      const [parentPdaOfLeaf, parentBumpOfLeaf] = await findParentMetaPda(anyLeaf)
       let endTx = await program.rpc.transferCrankEndV2(
         {
           accounts: {
             operator: UserKeypair.publicKey,
             childrenMetaOfRoot: pda.account.root,
             childrenMetaOfClose: pda.publicKey,
-            parentMeta: parentPdaOfLeaf,
+            parentMeta: parentPda,
             crankMeta: crankPda,
             systemProgram: anchor.web3.SystemProgram.programId,
             rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -64,7 +62,7 @@ async function main() {
     } else {
       // 2.有孩子的
       //   a. 有两层， 需要执行init、process、end
-      console.log("Own children branch, parentMeta:",parentMeta);
+      console.log("Own children branch, parentMeta:", parentMeta);
       let initTx = await program.rpc.transferCrankInitV2(
         {
           accounts: {
@@ -82,7 +80,7 @@ async function main() {
         }
       );
       console.log("initTx:", initTx);
-      parentMeta.immediateChildren.filter(child => child.toBase58() != PublicKey.default.toBase58()).forEach(async child => {
+      let processMap = parentMeta.immediateChildren.filter(child => child.toBase58() != PublicKey.default.toBase58()).map(async child => {
         const [childrenMetaPda, childrenMetaBump] = await findChildrenMetaPda(pda.account.child, child)
         const [parentPdaOfChild, parentBumpOfChild] = await findParentMetaPda(child)
         let processTx = await program.rpc.transferCrankProcessV2(
@@ -100,9 +98,10 @@ async function main() {
             signers: [UserKeypair],
           }
         );
-        console.log("processTx:", processTx);
+        return processTx;
       });
 
+      let ret = await Promise.all(processMap);
       const anyLeaf = parentMeta.immediateChildren.filter(child => child.toBase58() != PublicKey.default.toBase58())[0];
       const [parentPdaOfLeaf, parentBumpOfLeaf] = await findParentMetaPda(anyLeaf)
       let endTx = await program.rpc.transferCrankEndV2(
@@ -120,6 +119,7 @@ async function main() {
         }
       );
       console.log("endTx:", endTx);
+      console.log("pda.publicKey:", pda.publicKey);
     }
   })
 }
@@ -130,11 +130,13 @@ async function fetchAllchildrenMetadataV2PDAs() {
   filter.push({
     memcmp: {
       offset: 106, //need to prepend 106 bytes for ChildrenMetadataV2 is_mutated
-      bytes:  Base58.int_to_base58(1),
+      bytes: Base58.int_to_base58(1),
     },
   });
   const pdas = await program.account.childrenMetadataV2.all(filter);
-  console.log("NFT ready for processing, length:", pdas.length);
+  console.log("NFT ready for processing, length:", pdas.length, ",data:", pdas);
+  pdas.forEach(element => {
+    console.log("pda.account:", element.account);
+  });
   return pdas;
 }
-main();
