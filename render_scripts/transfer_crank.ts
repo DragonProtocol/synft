@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { SynftProgram as program, findParentMetaPda, findChildrenMetaPda, findCrankMetaPda, UserKeypair } from "./common";
 import * as anchor from "@project-serum/anchor";
-async function doTransferCrank() {
+export async function doTransferCrank() {
   let mutatedPdas = await fetchAllchildrenMetadataV2PDAs();
   if (mutatedPdas.length == 0) {
     console.log("There're no transfering nfts now.");
