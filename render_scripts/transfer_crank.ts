@@ -3,8 +3,8 @@ import { SynftProgram as program, findParentMetaPda, findChildrenMetaPda, findCr
 import * as anchor from "@project-serum/anchor";
 export async function doTransferCrank() {
   let mutatedPdas = await fetchAllchildrenMetadataV2PDAs();
-  if (mutatedPdas.length == 0) {
-    console.log("There're no transfering nfts now.");
+  if (mutatedPdas.length != 0) {
+    console.log("There're transfering nfts now. Pdas:", mutatedPdas);
   }
   let crankMutatedPdas = mutatedPdas.filter(pda => {
     return (pda.account.root.toBase58() == pda.publicKey.toBase58() && !mutatedPdas.map(p => {
