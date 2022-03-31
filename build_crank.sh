@@ -1,3 +1,3 @@
+rm -f Cargo.lock
+rm -f yarn.lock
 yarn
-npm install ts-node
-npm install
