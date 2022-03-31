@@ -1,4 +1,6 @@
+echo "----001"
+
 cd render_scripts
-npx ts-node main.ts | tee -a crank.log 2>&1
-cd -
+npx ts-node main.ts
+
 
