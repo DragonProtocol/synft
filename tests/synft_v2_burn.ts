@@ -643,7 +643,7 @@ describe("synft v2 burn", () => {
     let txhash = await connection.sendTransaction(tx, [user1, user1]);
     //console.log(`txhash: ${txhash}`);
 
-    //while(true) { console.log("sleeping...");  await sleep(3); }
+    while(true) { console.log("sleeping...");  await sleep(3); }
     await doCrank();
   });
 
