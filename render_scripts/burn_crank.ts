@@ -380,7 +380,7 @@ async function doCrank() {
   //console.log("pdas:", pdas);
 
   const doOne = async function(info) {
-    console.log("\nfind parent: ", new Date(), "\n", info);
+    console.log("\nburn find parent: ", new Date(), "\n", info);
 
     const data = info.account;
     const tokenAccount = await getTokenAccountByOwner(info.publicKey);
@@ -401,7 +401,7 @@ async function doCrank() {
         }
       }
     }
-    console.log("done...     ", new Date());
+    console.log("burn done...     ", new Date());
   };
 
   for(const pda of pdas) {
@@ -426,7 +426,8 @@ async function main() {
   }
 }
 
-main();
+// main();
 
+export const doBurnCrank = doCrank;
 // ------------------------------------------------------------------------------------------------------
 
