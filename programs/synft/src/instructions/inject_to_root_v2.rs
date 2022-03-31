@@ -41,10 +41,11 @@ pub struct InjectToRootV2<'info> {
     pub parent_meta: Box<Account<'info, ParentMetadata>>,
 
     #[account(
-        init, 
+        init_if_needed, 
         payer = current_owner,
         space = 8 + size_of::<ParentMetadata>(),
         seeds = [PARENT_PDA_SEED, child_mint_account.key().as_ref()], bump,
+        constraint = !parent_meta_of_child.has_children(),
     )]
     pub parent_meta_of_child: Box<Account<'info, ParentMetadata>>,
 
