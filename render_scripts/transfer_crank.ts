@@ -2,8 +2,10 @@ import { PublicKey } from "@solana/web3.js";
 import { SynftProgram as program, findParentMetaPda, findChildrenMetaPda, findCrankMetaPda, UserKeypair } from "./common";
 import * as anchor from "@project-serum/anchor";
 async function main() {
-  let pdas = await fetchAllchildrenMetadataV2PDAs();
-  let mutatedPdas = pdas.filter(pda => pda.account.isMutated);
+  let mutatedPdas = await fetchAllchildrenMetadataV2PDAs();
+  if (mutatedPdas.length == 0){
+    console.log("There're no transfering nfts now.");
+  }
   let crankMutatedPdas = mutatedPdas.filter(pda => {
     return (pda.account.root.toBase58() == pda.publicKey.toBase58() && !mutatedPdas.map(p => {
       if (p.publicKey.toBase58() != pda.publicKey.toBase58()) {
@@ -19,7 +21,8 @@ async function main() {
     const [crankPda, crankBump] = await findCrankMetaPda(pda.account.child)
 
     let parentMeta = await program.account.parentMetadata.fetch(parentPda);
-    if (parentMeta.immediateChildren.every(child => child == PublicKey.default)) {
+    if (parentMeta.immediateChildren.every(child => child.toBase58() == PublicKey.default.toBase58())) {
+      console.log("No children branch, parentMeta:",parentMeta);
       // 1. 没有孩子的 执行init、end
       //   a. root指向自己的，说明是前两层
       //   b. root不指向自己，说明是后两层
@@ -61,6 +64,7 @@ async function main() {
     } else {
       // 2.有孩子的
       //   a. 有两层， 需要执行init、process、end
+      console.log("Own children branch, parentMeta:",parentMeta);
       let initTx = await program.rpc.transferCrankInitV2(
         {
           accounts: {
@@ -121,14 +125,16 @@ async function main() {
 }
 
 async function fetchAllchildrenMetadataV2PDAs() {
-  // const filter: any = [];
-  // filter.push({
-  //   memcmp: {
-  //     offset: 22, //need to prepend 34 bytes for ChildrenMetadataV2 is_mutated
-  //     bytes: "r3ye1XJ",
-  //   },
-  // });
-  const pdas = await program.account.childrenMetadataV2.all();
+  const filter: any = [];
+  const Base58 = require('base58');
+  filter.push({
+    memcmp: {
+      offset: 106, //need to prepend 106 bytes for ChildrenMetadataV2 is_mutated
+      bytes:  Base58.int_to_base58(1),
+    },
+  });
+  const pdas = await program.account.childrenMetadataV2.all(filter);
+  console.log("NFT ready for processing, length:", pdas.length);
   return pdas;
 }
 main();
