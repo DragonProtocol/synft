@@ -54,6 +54,11 @@
   "resolved" "https://registry.npmjs.org/arg/-/arg-4.1.3.tgz"
   "version" "4.1.3"
 
+"base58@^2.0.1":
+  "integrity" "sha512-qK6gt2fMSxN2xGOi+btI5oAnXL+vEq0AsHWHhf5jfm2hE6MwmW+2414qF96utV3Xfg3En8hEA9Q4lif4lbXcgw=="
+  "resolved" "https://registry.npmjs.org/base58/-/base58-2.0.1.tgz"
+  "version" "2.0.1"
+
 "create-require@^1.1.0":
   "integrity" "sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ=="
   "resolved" "https://registry.npmjs.org/create-require/-/create-require-1.1.1.tgz"

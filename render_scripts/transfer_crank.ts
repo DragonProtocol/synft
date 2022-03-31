@@ -2,8 +2,8 @@ import { PublicKey } from "@solana/web3.js";
 import { SynftProgram as program, findParentMetaPda, findChildrenMetaPda, findCrankMetaPda, UserKeypair } from "./common";
 import * as anchor from "@project-serum/anchor";
 async function main() {
-  let pdas = await fetchAllchildrenMetadataV2PDAs();
-  let mutatedPdas = pdas.filter(pda => pda.account.isMutated);
+  let mutatedPdas = await fetchAllchildrenMetadataV2PDAs();
+  // let mutatedPdas = pdas.filter(pda => pda.account.isMutated);
   let crankMutatedPdas = mutatedPdas.filter(pda => {
     return (pda.account.root.toBase58() == pda.publicKey.toBase58() && !mutatedPdas.map(p => {
       if (p.publicKey.toBase58() != pda.publicKey.toBase58()) {
@@ -121,14 +121,15 @@ async function main() {
 }
 
 async function fetchAllchildrenMetadataV2PDAs() {
-  // const filter: any = [];
-  // filter.push({
-  //   memcmp: {
-  //     offset: 22, //need to prepend 34 bytes for ChildrenMetadataV2 is_mutated
-  //     bytes: "r3ye1XJ",
-  //   },
-  // });
-  const pdas = await program.account.childrenMetadataV2.all();
+  const filter: any = [];
+  const Base58 = require('base58');
+  filter.push({
+    memcmp: {
+      offset: 106, //need to prepend 106 bytes for ChildrenMetadataV2 is_mutated
+      bytes:  Base58.int_to_base58(1),
+    },
+  });
+  const pdas = await program.account.childrenMetadataV2.all(filter);
   return pdas;
 }
 main();
