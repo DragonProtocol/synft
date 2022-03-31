@@ -82,8 +82,6 @@ async function fetchAllParentMetadataPDAs1() {
 
 
 let deal_single_new_root = async function(mintP, mintC, tokenP, tokenC) {
-  let connection = anchor.getProvider().connection;
-
   const [_parentMetadata, ] = await PublicKey.findProgramAddress(
     [
       Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
@@ -138,8 +136,6 @@ let deal_single_new_root = async function(mintP, mintC, tokenP, tokenC) {
 }
 
 let start_branch = async function(mintP, mintC, tokenP, tokenC, mintGrandson) {
-  let connection = anchor.getProvider().connection;
-
   const [_parentMetadata, ] = await PublicKey.findProgramAddress(
     [
       Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
@@ -242,8 +238,6 @@ let start_branch = async function(mintP, mintC, tokenP, tokenC, mintGrandson) {
 }
 
 let update_branch = async function(mintP, mintC, mintOldRoot, mintNewRoot, tokenOldRoot, tokenNewRoot, mintGrandson) {
-  let connection = anchor.getProvider().connection;
-
   const [_childMetadata, ] = await PublicKey.findProgramAddress(
     [
       Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
@@ -372,8 +366,8 @@ const pubkey_array_len = function(a) {
 }
 
 const getTokenAccountByOwner = async function(owner) {
-  let connection = anchor.getProvider().connection;
-  let response = await connection.getTokenAccountsByOwner(
+  //let connection = anchor.getProvider().connection;
+  let response = await program.provider.connection.getTokenAccountsByOwner(
     owner, { programId: TOKEN_PROGRAM_ID, }
   );
   return response.value[0].pubkey;
