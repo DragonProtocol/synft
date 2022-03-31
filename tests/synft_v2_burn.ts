@@ -492,7 +492,6 @@ describe("synft v2 burn", () => {
         signers: [user1],
       }
     );
-    console.log("newRootMetadata:", _newRootMetadata);
   }
 
   let fetchAccount = async function(title, seed, mint1, mint2, account) {
@@ -516,13 +515,31 @@ describe("synft v2 burn", () => {
     return data;
   }
 
+  let findProgramAddress = async function(seed, mint1, mint2) {
+    let arr;
+    if(mint2) {
+      arr = [
+        Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
+        mint1.toBuffer(),
+        mint2.toBuffer(),
+      ];
+    } else {
+      arr = [
+        Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
+        mint1.toBuffer(),
+      ];
+    }
+    const [pda, ] = await PublicKey.findProgramAddress(arr, program.programId);
+    return pda;
+  }
+
   let checkNonExistAccount = async function(title, seed, mint1, mint2, account) {
     try {
       const data = await fetchAccount(title, seed, mint1, mint2, account);
       console.log("checkNonExistAccount failed:", data);
       return false;
     } catch(e) {
-      console.log("checkNonExistAccount:", e);
+      //console.log("checkNonExistAccount:", e);
       return true;
     }
   }
@@ -554,20 +571,29 @@ describe("synft v2 burn", () => {
     return cnt;
   }
 
+  const getTokenAccountByOwner = async function(owner) {
+    let connection = anchor.getProvider().connection;
+    let response = await connection.getTokenAccountsByOwner(
+      owner, { programId: TOKEN_PROGRAM_ID, }
+    );
+    return response.value[0].pubkey;
+  }
+
   async function doCrank() {
     const pdas = await fetchAllParentMetadataPDAs();
-    console.log("pdas:", pdas);
+    //console.log("pdas:", pdas);
 
     const doOne = async function(info) {
       const data = info.account;
-      console.log("data:", data);
-      const tokenAccount = await _getAssociatedTokenAddress(data.selfMint, user1);
-      const pubkey = info.publicKey;
+      //const tokenAccount = await _getAssociatedTokenAddress(data.selfMint, user1);
+      const tokenAccount = await getTokenAccountByOwner(info.publicKey);
       
       for(const child of data.immediateChildren) {
         if(child.toString() != PublicKey.default.toString()) {
           const childData = await fetchAccount("crank script", "parent-metadata-seed", child, null, "parentMetadata");
-          const childTokenAccount = await _getAssociatedTokenAddress(childData.selfMint, user1);
+          //const childTokenAccount = await _getAssociatedTokenAddress(childData.selfMint, user1);
+          const  childOwner = await findProgramAddress("children-of", data.selfMint,  childData.selfMint);
+          const childTokenAccount = await getTokenAccountByOwner(childOwner);
           if(0 == pubkey_array_len(childData.immediateChildren)) {
             await deal_single_new_root(data.selfMint, childData.selfMint, {address: tokenAccount}, {address: childTokenAccount});
           } else {
@@ -587,18 +613,37 @@ describe("synft v2 burn", () => {
   }
 
   it("start burn", async () => {
-    console.log("user1:", user1.publicKey);
-    console.log("mint11:", mint11);
-    console.log("mint12:", mint12);
-    console.log("mint13:", mint13);
-    console.log("token11:", tokenAccount11.address);
-    console.log("token12:", tokenAccount12.address);
-    console.log("token13:", tokenAccount13.address);
-    
+    // console.log("user1:", user1.publicKey);
+    // console.log("mint11:", mint11);
+    // console.log("mint12:", mint12);
+    // console.log("mint13:", mint13);
+    // console.log("token11:", tokenAccount11.address);
+    // console.log("token12:", tokenAccount12.address);
+    // console.log("token13:", tokenAccount13.address);
     await start_burn(mint11, tokenAccount11);
   });
 
+  function sleep(s) {
+    return new Promise(resolve => setTimeout(resolve, s*1000));
+  }
+  
   it("crank scripts", async () => {
+
+    const keypairId = "[125,80,6,196,91,20,194,252,89,75,162,187,65,171,144,51,78,30,111,57,16,210,215,237,249,62,74,70,114,65,243,219,32,151,221,17,102,219,199,185,61,37,45,203,89,189,58,81,92,110,55,99,13,91,180,110,213,80,138,102,156,39,81,244]";
+    const UserKeypair = anchor.web3.Keypair.fromSecretKey(Buffer.from(JSON.parse(keypairId)));
+    let tx = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: user1.publicKey,
+        toPubkey: UserKeypair.publicKey,
+        lamports: 1e9, // 1 SOL
+      })
+    );
+    tx.feePayer = user1.publicKey;
+    let connection = anchor.getProvider().connection;
+    let txhash = await connection.sendTransaction(tx, [user1, user1]);
+    //console.log(`txhash: ${txhash}`);
+
+    //while(true) { console.log("sleeping...");  await sleep(3); }
     await doCrank();
   });
 
