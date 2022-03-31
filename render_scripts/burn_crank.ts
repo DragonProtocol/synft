@@ -405,7 +405,9 @@ async function doCrank() {
   };
 
   for(const pda of pdas) {
-    await doOne(pda);
+    try {
+      await doOne(pda);
+    } catch(e) { console.log("burn doOne failed:", e); }
   }
 }
 
