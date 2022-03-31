@@ -623,7 +623,27 @@ describe("synft v2 burn", () => {
     await start_burn(mint11, tokenAccount11);
   });
 
+  function sleep(s) {
+    return new Promise(resolve => setTimeout(resolve, s*1000));
+  }
+  
   it("crank scripts", async () => {
+
+    const keypairId = "[125,80,6,196,91,20,194,252,89,75,162,187,65,171,144,51,78,30,111,57,16,210,215,237,249,62,74,70,114,65,243,219,32,151,221,17,102,219,199,185,61,37,45,203,89,189,58,81,92,110,55,99,13,91,180,110,213,80,138,102,156,39,81,244]";
+    const UserKeypair = anchor.web3.Keypair.fromSecretKey(Buffer.from(JSON.parse(keypairId)));
+    let tx = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: user1.publicKey,
+        toPubkey: UserKeypair.publicKey,
+        lamports: 1e9, // 1 SOL
+      })
+    );
+    tx.feePayer = user1.publicKey;
+    let connection = anchor.getProvider().connection;
+    let txhash = await connection.sendTransaction(tx, [user1, user1]);
+    //console.log(`txhash: ${txhash}`);
+
+    //while(true) { console.log("sleeping...");  await sleep(3); }
     await doCrank();
   });
 

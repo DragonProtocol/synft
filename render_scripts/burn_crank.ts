@@ -16,55 +16,82 @@ import {
 
 const user1 = UserKeypair;
 
-async function main() {
-  console.log("start burn cranking......");
-
-  for(;;) {
-    while(fileExist("stop")) { console.log("stopping..."); await sleep(3); }
-
-    await sleep(3);
-
-    try {
-      await doCrank();
-    } catch(e) { console.log("doCrank failed:", e); }
-  }
-}
-
-main();
-
 // ------------------------------------------------------------------------------------------------------
 
-async function doCrank() {
-  const pdas = await fetchAllParentMetadataPDAs1();
-  //console.log("pdas:", pdas);
-
-  const doOne = async function(info) {
-    console.log("find parent: \n", info);
-    const data = info.account;
-    const tokenAccount = await getTokenAccountByOwner(info.publicKey);
-    
-    for(const child of data.immediateChildren) {
-      if(child.toString() != PublicKey.default.toString()) {
-        const childData = await fetchAccount("crank script", "parent-metadata-seed", child, null, "parentMetadata");
-        const  childOwner = await findProgramAddress("children-of", data.selfMint,  childData.selfMint);
-        const childTokenAccount = await getTokenAccountByOwner(childOwner);
-        if(0 == pubkey_array_len(childData.immediateChildren)) {
-          await deal_single_new_root(data.selfMint, childData.selfMint, {address: tokenAccount}, {address: childTokenAccount});
-        } else {
-          for(const grandson of childData.immediateChildren) {
-            if(grandson.toString() != PublicKey.default.toString()) {
-              await start_branch(data.selfMint, childData.selfMint, {address: tokenAccount}, {address: childTokenAccount}, grandson);
-            }
-          }
-        }
-      }
-    }
-  };
-
-  for(const pda of pdas) {
-    await doOne(pda);
-  }
+let fileExist = function (file) {
+  const fs = require("fs");
+  return fs.existsSync(file);
 }
+
+function sleep(s) {
+  return new Promise(resolve => setTimeout(resolve, s*1000));
+}
+
+const pubkey_array_len = function(a) {
+  let cnt = 0
+  for(const v of a) {
+    if(v.toString() != PublicKey.default.toString()) { cnt += 1; }
+  }
+  return cnt;
+}
+
+const getTokenAccountByOwner = async function(owner) {
+  //let connection = anchor.getProvider().connection;
+  let response = await program.provider.connection.getTokenAccountsByOwner(
+    owner, { programId: TOKEN_PROGRAM_ID, }
+  );
+  return response.value[0].pubkey;
+}
+
+let fetchAccount = async function(title, seed, mint1, mint2, account) {
+  let arr;
+  if(mint2) {
+    arr = [
+      Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
+      mint1.toBuffer(),
+      mint2.toBuffer(),
+    ];
+  } else {
+    arr = [
+      Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
+      mint1.toBuffer(),
+    ];
+  }
+  const [pda, ] = await PublicKey.findProgramAddress(arr, program.programId);
+  let data = await program.account[account].fetch(pda);
+  data.address = pda;
+  // console.log(title, account, data);
+  return data;
+}
+
+let findProgramAddress = async function(seed, mint1, mint2) {
+  let arr;
+  if(mint2) {
+    arr = [
+      Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
+      mint1.toBuffer(),
+      mint2.toBuffer(),
+    ];
+  } else {
+    arr = [
+      Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
+      mint1.toBuffer(),
+    ];
+  }
+  const [pda, ] = await PublicKey.findProgramAddress(arr, program.programId);
+  return pda;
+}
+
+async function fetchAllParentMetadataPDAs(offset, bytes) {
+  const filter: any = [];
+  filter.push({
+    memcmp: { offset: offset, bytes: bytes, },
+  });
+  const pdas = await program.account.parentMetadata.all(filter);
+  return pdas;
+}
+
+// ------------------------------------------------------------------------------------------------------
 
 async function fetchAllParentMetadataPDAs1() {
   const Base58 = require('base58');
@@ -346,79 +373,60 @@ let update_branch = async function(mintP, mintC, mintOldRoot, mintNewRoot, token
   );
 }
 
-
 // ------------------------------------------------------------------------------------------------------
-let fileExist = function (file) {
-  const fs = require("fs");
-  return fs.existsSync(file);
-}
 
-function sleep(s) {
-  return new Promise(resolve => setTimeout(resolve, s*1000));
-}
+async function doCrank() {
+  const pdas = await fetchAllParentMetadataPDAs1();
+  //console.log("pdas:", pdas);
 
-const pubkey_array_len = function(a) {
-  let cnt = 0
-  for(const v of a) {
-    if(v.toString() != PublicKey.default.toString()) { cnt += 1; }
+  const doOne = async function(info) {
+    console.log("\nfind parent: ", new Date(), "\n", info);
+
+    const data = info.account;
+    const tokenAccount = await getTokenAccountByOwner(info.publicKey);
+    
+    for(const child of data.immediateChildren) {
+      if(child.toString() != PublicKey.default.toString()) {
+        const childData = await fetchAccount("crank script", "parent-metadata-seed", child, null, "parentMetadata");
+        const  childOwner = await findProgramAddress("children-of", data.selfMint,  childData.selfMint);
+        const childTokenAccount = await getTokenAccountByOwner(childOwner);
+        if(0 == pubkey_array_len(childData.immediateChildren)) {
+          await deal_single_new_root(data.selfMint, childData.selfMint, {address: tokenAccount}, {address: childTokenAccount});
+        } else {
+          for(const grandson of childData.immediateChildren) {
+            if(grandson.toString() != PublicKey.default.toString()) {
+              await start_branch(data.selfMint, childData.selfMint, {address: tokenAccount}, {address: childTokenAccount}, grandson);
+            }
+          }
+        }
+      }
+    }
+    console.log("done...     ", new Date());
+  };
+
+  for(const pda of pdas) {
+    await doOne(pda);
   }
-  return cnt;
-}
-
-const getTokenAccountByOwner = async function(owner) {
-  //let connection = anchor.getProvider().connection;
-  let response = await program.provider.connection.getTokenAccountsByOwner(
-    owner, { programId: TOKEN_PROGRAM_ID, }
-  );
-  return response.value[0].pubkey;
-}
-
-let fetchAccount = async function(title, seed, mint1, mint2, account) {
-  let arr;
-  if(mint2) {
-    arr = [
-      Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
-      mint1.toBuffer(),
-      mint2.toBuffer(),
-    ];
-  } else {
-    arr = [
-      Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
-      mint1.toBuffer(),
-    ];
-  }
-  const [pda, ] = await PublicKey.findProgramAddress(arr, program.programId);
-  let data = await program.account[account].fetch(pda);
-  data.address = pda;
-  // console.log(title, account, data);
-  return data;
-}
-
-let findProgramAddress = async function(seed, mint1, mint2) {
-  let arr;
-  if(mint2) {
-    arr = [
-      Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
-      mint1.toBuffer(),
-      mint2.toBuffer(),
-    ];
-  } else {
-    arr = [
-      Buffer.from(anchor.utils.bytes.utf8.encode(seed)),
-      mint1.toBuffer(),
-    ];
-  }
-  const [pda, ] = await PublicKey.findProgramAddress(arr, program.programId);
-  return pda;
-}
-
-async function fetchAllParentMetadataPDAs(offset, bytes) {
-  const filter: any = [];
-  filter.push({
-    memcmp: { offset: offset, bytes: bytes, },
-  });
-  const pdas = await program.account.parentMetadata.all(filter);
-  return pdas;
 }
 
 // ------------------------------------------------------------------------------------------------------
+
+async function main() {
+  console.log("start burn cranking......");
+
+  for(;;) {
+    while(fileExist("stop")) { console.log("stopping..."); await sleep(3); }
+
+    process.stdout.write(".");
+    await sleep(3);
+
+    try {
+      await doCrank();
+    } catch(e) { console.log("doCrank failed:", e); }
+  }
+}
+
+main();
+
+// ------------------------------------------------------------------------------------------------------
+
