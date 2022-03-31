@@ -134,7 +134,7 @@ async function fetchAllchildrenMetadataV2PDAs() {
     },
   });
   const pdas = await program.account.childrenMetadataV2.all(filter);
-  console.log("NFT ready for processing, length:", pdas.length, ",data:", pdas);
+  process.stdout.write("*");
   pdas.forEach(element => {
     console.log("pda.account:", element.account);
   });
