@@ -12,7 +12,7 @@ return new Promise(resolve => setTimeout(resolve, s*1000));
   
 async function main() {
     console.log("start cranking......");
-  
+    
     for(;;) {
       while(fileExist("stop")) { console.log("stopping..."); await sleep(3); }
   

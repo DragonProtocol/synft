@@ -7,6 +7,11 @@ pub const SYNTHETIC_NFT_MINT_SEED: &[u8] = b"synthetic-nft-mint-seed";
 pub const SYNTHETIC_NFT_ACOUNT_SEED: &[u8] = b"synthetic-nft-account-seed";
 pub const SOL_PDA_SEED: &[u8] = b"sol-seed";
 pub const CRANK_PDA_SEED: &[u8] = b"crank-seed";
+
+pub const ROOT_OWNER_SEED: &[u8] = b"root-owner-seed";
+pub const NEW_ROOT_INFO_SEED: &[u8] = b"new-root-info-seed";
+pub const BRANCH_INFO_SEED: &[u8] = b"branch-info-seed";
+
 pub const TREE_LEVEL_HEIGHT_LIMIT: u8 = 3;
 
 #[account]
@@ -83,6 +88,21 @@ pub struct SolAccount {
     pub bump: u8,
 }
 
+#[account]
+pub struct NewRootInfo {
+    pub branch_finished: u32,
+    pub root: Pubkey,
+}
+
+#[account]
+pub struct BranchInfo {
+}
+
+#[account]
+pub struct RootOwner {
+    pub owner: Pubkey
+}
+
 #[error_code]
 pub enum ErrorCode {
     #[msg("The bump passed in does not match the bump in the PDA")]
@@ -98,3 +118,65 @@ pub enum ErrorCode {
     #[msg("Wrong opration of crank end instruction for the token")]
     InvalidTransferCrankEnd
 }
+
+// ------------------------------------------------------------------------------------------------------------------
+
+pub fn pubkey_array_append(src: &[Pubkey], dst: &mut [Pubkey]) {
+    for i in 0..src.len() {
+        if !src[i].eq(&Pubkey::default()) {
+            for j in 0..dst.len() {
+                if dst[j].eq(&Pubkey::default()) {
+                    dst[j] = src[i];
+                    break;
+                }
+            }
+        }
+    }
+}
+
+pub fn pubkey_array_all_empty(arr: &[Pubkey]) -> bool {
+    for i in 0..arr.len() {
+        if !arr[i].eq(&Pubkey::default()) {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn pubkey_array_find(arr: &[Pubkey], key: Pubkey) -> u32 {
+
+    for i in 0..arr.len() {
+        if arr[i].eq(&key) {
+            return i as u32;
+        }
+    }
+    u32::MAX
+}
+
+pub fn pubkey_array_remove(arr: &mut[Pubkey], key: Pubkey) {
+    for i in 0..arr.len() {
+        if arr[i].eq(&key) {
+            arr[i] = Pubkey::default();
+        }
+    }
+}
+
+pub fn pubkey_array_len(arr: &[Pubkey]) -> u32 {
+    let mut cnt: u32 = 0;
+    for i in 0..arr.len() {
+        if !arr[i].eq(&Pubkey::default()) {
+            cnt += 1;
+        }
+    }
+    cnt
+}
+
+pub fn pubkey_array_print(arr: &[Pubkey]) {
+    msg!("------------>>>>");
+    for i in 0..arr.len() {
+        msg!("{:x?}", arr[i].to_bytes());
+    }
+    msg!("------------<<<<");
+}
+
+// ------------------------------------------------------------------------------------------------------------------

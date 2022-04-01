@@ -1,10 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{
-    self, SetAuthority, Mint, Token, TokenAccount, Burn
+    self, SetAuthority, Mint, Token, TokenAccount, Burn, CloseAccount,
 };
 use spl_token::instruction::AuthorityType;
 use crate::state::metadata::{
-    CRANK_PDA_SEED, CHILDREN_PDA_SEED, PARENT_PDA_SEED, SOL_PDA_SEED, ParentMetadata, SolAccount, CrankMetadata, ChildrenMetadataV2
+    CRANK_PDA_SEED, CHILDREN_PDA_SEED, PARENT_PDA_SEED, SOL_PDA_SEED, NEW_ROOT_INFO_SEED, BRANCH_INFO_SEED, ROOT_OWNER_SEED, 
+    ParentMetadata, SolAccount, CrankMetadata, ChildrenMetadataV2, NewRootInfo, BranchInfo, RootOwner,
+    pubkey_array_append, pubkey_array_all_empty, pubkey_array_find, pubkey_array_len, pubkey_array_remove,
 };
 use anchor_lang::AccountsClose;
 use std::mem::size_of;
@@ -87,79 +89,15 @@ fn into_burn_context<'info>(
     CpiContext::new(token_program, cpi_accounts)
 }
 
-pub fn pubkey_array_append(src: &[Pubkey], dst: &mut [Pubkey]) {
-    for i in 0..src.len() {
-        if !src[i].eq(&Pubkey::default()) {
-            for j in 0..dst.len() {
-                if dst[j].eq(&Pubkey::default()) {
-                    dst[j] = src[i];
-                    break;
-                }
-            }
-        }
-    }
-}
 
-pub fn pubkey_array_all_empty(arr: &[Pubkey]) -> bool {
-    for i in 0..arr.len() {
-        if !arr[i].eq(&Pubkey::default()) {
-            return false;
-        }
-    }
-    true
-}
-
-pub fn pubkey_array_find(arr: &[Pubkey], key: Pubkey) -> u32 {
-
-    for i in 0..arr.len() {
-        if arr[i].eq(&key) {
-            return i as u32;
-        }
-    }
-    u32::MAX
-}
-
-pub fn pubkey_array_remove(arr: &mut[Pubkey], key: Pubkey) {
-    for i in 0..arr.len() {
-        if arr[i].eq(&key) {
-            arr[i] = Pubkey::default();
-        }
-    }
-}
-
-pub fn pubkey_array_len(arr: &[Pubkey]) -> u32 {
-    let mut cnt: u32 = 0;
-    for i in 0..arr.len() {
-        if !arr[i].eq(&Pubkey::default()) {
-            cnt += 1;
-        }
-    }
-    cnt
-}
-
-pub fn pubkey_array_print(arr: &[Pubkey]) {
-    msg!("------------>>>>");
-    for i in 0..arr.len() {
-        msg!("{:x?}", arr[i].to_bytes());
-    }
-    msg!("------------<<<<");
-}
-
-// ------------------------------------------------------------------------------------------------------------------
-
-#[account]
-pub struct NewRootInfo {
-    branch_finished: u32,
-    root: Pubkey,
-}
-
-#[account]
-pub struct BranchInfo {
-}
-
-#[account]
-pub struct RootOwner {
-    owner: Pubkey
+fn into_close_account_context<'info>(
+    token_program: AccountInfo<'info>, 
+    account: AccountInfo<'info>,
+    destination: AccountInfo<'info>,
+    authority: AccountInfo<'info>,
+    ) -> CpiContext<'info, 'info, 'info, 'info, CloseAccount<'info>> {
+    let cpi_accounts = CloseAccount { account: account, destination: destination, authority: authority };
+    CpiContext::new(token_program, cpi_accounts)
 }
 
 #[derive(Accounts)]
@@ -191,7 +129,7 @@ pub struct StartBurn<'info> {
         init,
         payer = current_owner,
         space = size_of::<RootOwner>() + 8,
-        seeds = [b"root-owner-seed", parent_mint_account.key().as_ref()], bump,
+        seeds = [ROOT_OWNER_SEED, parent_mint_account.key().as_ref()], bump,
     )]
     pub old_root_owner: Box<Account<'info, RootOwner>>,
 
@@ -233,6 +171,14 @@ pub fn handle_start_burn(ctx: Context<StartBurn>) -> Result<()> {
             root_token.amount)?;
         root_metadata.close(current_owner.to_account_info())?;
         old_root_owner.close(current_owner.to_account_info())?;
+        token::close_account(
+            into_close_account_context(
+                token_program.to_account_info(), 
+                root_mint.to_account_info(),
+                current_owner.to_account_info(),
+                current_owner.to_account_info(),
+            )
+        )?;
     }
 
     sol_account.close(current_owner.to_account_info())?;
@@ -277,7 +223,7 @@ pub struct DealSingleNewRoot<'info> {
     pub children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
 
     #[account(mut,
-        seeds = [b"root-owner-seed", parent_mint.key().as_ref()], bump,
+        seeds = [ROOT_OWNER_SEED, parent_mint.key().as_ref()], bump,
     )]
     pub old_root_owner: Box<Account<'info, RootOwner>>,
 
@@ -409,7 +355,7 @@ pub struct StartBranch<'info> {
         init_if_needed, 
         payer = current_owner,
         space = size_of::<NewRootInfo>() + 8,
-        seeds = [b"new-root-info-seed", child_mint.key().as_ref()], bump,
+        seeds = [NEW_ROOT_INFO_SEED, child_mint.key().as_ref()], bump,
     )]
     pub new_root_info: Box<Account<'info, NewRootInfo>>,
     
@@ -417,12 +363,12 @@ pub struct StartBranch<'info> {
         init, 
         payer = current_owner,
         space = size_of::<BranchInfo>() + 8,
-        seeds = [b"branch-info-seed", child_mint.key().as_ref(), grandson_mint.key().as_ref()], bump,
+        seeds = [BRANCH_INFO_SEED, child_mint.key().as_ref(), grandson_mint.key().as_ref()], bump,
     )]
     pub branch_info: Box<Account<'info, BranchInfo>>,
 
     #[account(mut,
-        seeds = [b"root-owner-seed", parent_mint.key().as_ref()], bump,
+        seeds = [ROOT_OWNER_SEED, parent_mint.key().as_ref()], bump,
     )]
     pub old_root_owner: Box<Account<'info, RootOwner>>,
 
@@ -562,17 +508,17 @@ pub struct UpdateBranch<'info> {
     pub crank_metadata : Box<Account<'info, CrankMetadata>>,
 
     #[account(mut,
-        seeds = [b"new-root-info-seed", new_root_mint.key().as_ref()], bump,
+        seeds = [NEW_ROOT_INFO_SEED, new_root_mint.key().as_ref()], bump,
     )]
     pub new_root_info: Box<Account<'info, NewRootInfo>>,
 
     #[account(mut,
-        seeds = [b"branch-info-seed", new_root_mint.key().as_ref(), grandson_mint.key().as_ref()], bump,
+        seeds = [BRANCH_INFO_SEED, new_root_mint.key().as_ref(), grandson_mint.key().as_ref()], bump,
     )]
     pub branch_info: Box<Account<'info, BranchInfo>>,
 
     #[account(mut,
-        seeds = [b"root-owner-seed", old_root_mint.key().as_ref()], bump,
+        seeds = [ROOT_OWNER_SEED, old_root_mint.key().as_ref()], bump,
     )]
     pub old_root_owner: Box<Account<'info, RootOwner>>,
 
