@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 
+use crate::state::metadata::{SolAccount, SOL_PDA_SEED};
 use anchor_spl::token::{Mint, TokenAccount};
 use solana_program::program::invoke;
 use solana_program::system_instruction;
-
-use crate::state::metadata::{SolAccount, SOL_PDA_SEED};
+use std::mem::size_of;
 
 #[derive(Accounts)]
 pub struct InjectSolV2<'info> {
@@ -16,10 +16,11 @@ pub struct InjectSolV2<'info> {
     pub parent_token_account: Account<'info, TokenAccount>,
     pub parent_mint_account: Account<'info, Mint>,
     #[account(
-        init,
+        init_if_needed,
         payer = current_owner,
-         // space: 8 discriminator +32 parent pubkey
-        space = 8+32,
+         // space: 8 discriminator + 1 bump
+        space = size_of::<SolAccount>() + 8,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
         constraint = parent_token_account.mint == parent_mint_account.key(),
         seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump
     )]
@@ -28,11 +29,8 @@ pub struct InjectSolV2<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(
-    ctx: Context<InjectSolV2>,
-    _bump: u8,
-    inject_sol_amount: u64,
-) -> Result<()> {
+pub fn handler(ctx: Context<InjectSolV2>, _bump: u8, inject_sol_amount: u64) -> Result<()> {
+    ctx.accounts.sol_account.bump = _bump;
 
     invoke(
         &system_instruction::transfer(
