@@ -23,7 +23,7 @@ It consists of some features:
 # Official deployment 🚀
 
 ```
-nftbxaFtUMxSip8eMTKCPbX9HvjKQmcREG6NyQ23auD
+nftNZSYP2LiWYW4zDdcNwimx6jWjJ8FnfN71o1ukd4p
 ```
 You can interact with them using this [enchanft.xyz](https://enchanft.xyz/)
 

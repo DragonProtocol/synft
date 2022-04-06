@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { Synft } from "./synft";
 const PublicKey = anchor.web3.PublicKey;
-const keypairId = "[176,69,96,224,88,241,226,73,86,103,219,74,50,97,101,66,4,60,196,99,78,197,47,213,139,7,195,202,52,67,92,221,240,130,166,190,8,7,110,100,122,178,250,39,198,141,128,147,72,221,190,55,104,93,127,25,194,49,14,236,211,75,176,55]";
+const keypairId = "[164,193,9,56,119,8,179,156,94,71,134,1,75,219,170,145,133,201,114,39,215,183,27,44,61,145,109,183,97,253,53,150,11,179,26,201,28,169,135,22,234,21,156,137,48,211,227,222,66,154,93,125,201,246,46,149,237,100,139,65,182,32,141,101]";
 export const UserKeypair = anchor.web3.Keypair.fromSecretKey(Buffer.from(JSON.parse(keypairId)))
 function initSynftProgram() {
   const idl = require("./idl.json");
