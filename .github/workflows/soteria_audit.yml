@@ -19,4 +19,4 @@ jobs:
           solana-version: "1.8.12"        # not required
           run-mode: "-analyzeAll"         # not required
           cargo-com: "."                  # not required
-          program-path: "program/"               # not required
+          program-path: "programs/synft"               # not required
