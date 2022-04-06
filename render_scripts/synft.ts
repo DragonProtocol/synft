@@ -1262,41 +1262,6 @@ export type Synft = {
   ],
   "accounts": [
     {
-      "name": "newRootInfo",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "branchFinished",
-            "type": "u32"
-          },
-          {
-            "name": "root",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "branchInfo",
-      "type": {
-        "kind": "struct",
-        "fields": []
-      }
-    },
-    {
-      "name": "rootOwner",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
       "name": "childrenMetadata",
       "type": {
         "kind": "struct",
@@ -1434,6 +1399,41 @@ export type Synft = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "newRootInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "branchFinished",
+            "type": "u32"
+          },
+          {
+            "name": "root",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "branchInfo",
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "rootOwner",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "publicKey"
           }
         ]
       }
@@ -2756,41 +2756,6 @@ export const IDL: Synft = {
   ],
   "accounts": [
     {
-      "name": "newRootInfo",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "branchFinished",
-            "type": "u32"
-          },
-          {
-            "name": "root",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "branchInfo",
-      "type": {
-        "kind": "struct",
-        "fields": []
-      }
-    },
-    {
-      "name": "rootOwner",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
       "name": "childrenMetadata",
       "type": {
         "kind": "struct",
@@ -2928,6 +2893,41 @@ export const IDL: Synft = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "newRootInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "branchFinished",
+            "type": "u32"
+          },
+          {
+            "name": "root",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "branchInfo",
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "rootOwner",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "publicKey"
           }
         ]
       }

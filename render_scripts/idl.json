@@ -1262,41 +1262,6 @@
   ],
   "accounts": [
     {
-      "name": "NewRootInfo",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "branchFinished",
-            "type": "u32"
-          },
-          {
-            "name": "root",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "BranchInfo",
-      "type": {
-        "kind": "struct",
-        "fields": []
-      }
-    },
-    {
-      "name": "RootOwner",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
       "name": "ChildrenMetadata",
       "type": {
         "kind": "struct",
@@ -1437,6 +1402,41 @@
           }
         ]
       }
+    },
+    {
+      "name": "NewRootInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "branchFinished",
+            "type": "u32"
+          },
+          {
+            "name": "root",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BranchInfo",
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "RootOwner",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "publicKey"
+          }
+        ]
+      }
     }
   ],
   "types": [
@@ -1491,6 +1491,6 @@
     }
   ],
   "metadata": {
-    "address": "3VUMLpWXZie1ruVgme2ZzeJ6BSY8c12dGNTRrKNRrpih"
+    "address": "nftNZSYP2LiWYW4zDdcNwimx6jWjJ8FnfN71o1ukd4p"
   }
 }
