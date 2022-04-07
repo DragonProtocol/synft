@@ -60,6 +60,7 @@ impl<'info> BurnV2<'info> {
 }
 
 pub fn handler(ctx: Context<BurnV2>, _sol_account_bump: u8, _parent_metadata_bump: u8) -> Result<()> {
+    panic!("not supported");
     ctx.accounts.parent_metadata.is_burnt = true;
     token::burn(ctx.accounts.into_burn_context(), ctx.accounts.parent_token_account.amount)?;
     ctx.accounts
@@ -171,14 +172,6 @@ pub fn handle_start_burn(ctx: Context<StartBurn>) -> Result<()> {
             root_token.amount)?;
         root_metadata.close(current_owner.to_account_info())?;
         old_root_owner.close(current_owner.to_account_info())?;
-        token::close_account(
-            into_close_account_context(
-                token_program.to_account_info(), 
-                root_mint.to_account_info(),
-                current_owner.to_account_info(),
-                current_owner.to_account_info(),
-            )
-        )?;
     }
 
     sol_account.close(current_owner.to_account_info())?;
