@@ -158,24 +158,30 @@ describe("synft v2 burn", () => {
     mint13 = await _createMint(payer, mintAuthority);
     mint15 = await _createMint(payer, mintAuthority);
     mint16 = await _createMint(payer, mintAuthority);
+    mint14 = await _createMint(payer, mintAuthority);
 
     tokenAccount11 = await _getOrCreateAssociatedTokenAccount(payer, mint11, user1);
     tokenAccount12 = await _getOrCreateAssociatedTokenAccount(payer, mint12, user1);
     tokenAccount13 = await _getOrCreateAssociatedTokenAccount(payer, mint13, user1);
     tokenAccount15 = await _getOrCreateAssociatedTokenAccount(payer, mint15, user1);
     tokenAccount16 = await _getOrCreateAssociatedTokenAccount(payer, mint16, user1);
+    tokenAccount14 = await _getOrCreateAssociatedTokenAccount(payer, mint14, user1);
+
 
     await _mintTo(payer, mint11, tokenAccount11, mintAuthority, 1);
     await _mintTo(payer, mint12, tokenAccount12, mintAuthority, 1);
     await _mintTo(payer, mint13, tokenAccount13, mintAuthority, 1);
     await _mintTo(payer, mint15, tokenAccount15, mintAuthority, 1);
     await _mintTo(payer, mint16, tokenAccount16, mintAuthority, 1);
+    await _mintTo(payer, mint14, tokenAccount14, mintAuthority, 1);
 
     await injectRoot(tokenAccount11, mint11, tokenAccount12, mint12, program, user1);
     await injectRoot(tokenAccount11, mint11, tokenAccount13, mint13, program, user1);
 
     await injectNonRoot(tokenAccount11, mint11, tokenAccount12, mint12, tokenAccount15, mint15, program, user1);
     await injectNonRoot(tokenAccount11, mint11, tokenAccount12, mint12, tokenAccount16, mint16, program, user1);
+
+    await injectSol(mint14, tokenAccount14, program, user1);
   });
 
   let start_burn = async function(mint, token) {
@@ -623,6 +629,10 @@ describe("synft v2 burn", () => {
     await start_burn(mint11, tokenAccount11);
   });
 
+  it("start burn 2", async () => {
+    await start_burn(mint14, tokenAccount14);
+  });
+
   function sleep(s) {
     return new Promise(resolve => setTimeout(resolve, s*1000));
   }
@@ -849,4 +859,30 @@ async function injectRoot(parentToken, parentMint, childToken, childMint, progra
     }
   );
 
+}
+
+async function injectSol(mint, token, program, user) {
+  const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
+    [
+      Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
+      mint.toBuffer(),
+    ],
+    program.programId
+  );
+  const inject_sol_amount = 500000000;
+  let initTx = await program.rpc.injectToSolV2(
+    _sol_bump,
+    new anchor.BN(inject_sol_amount),
+    {
+      accounts: {
+        currentOwner: user.publicKey,
+        parentTokenAccount: token.address,
+        parentMintAccount: mint,
+        solAccount: _sol_pda,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+      signers: [user],
+    }
+  );
 }
