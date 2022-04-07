@@ -159,6 +159,8 @@ describe("synft v2 burn", () => {
     mint15 = await _createMint(payer, mintAuthority);
     mint16 = await _createMint(payer, mintAuthority);
     mint14 = await _createMint(payer, mintAuthority);
+    mint17 = await _createMint(payer, mintAuthority);
+    mint18 = await _createMint(payer, mintAuthority);
 
     tokenAccount11 = await _getOrCreateAssociatedTokenAccount(payer, mint11, user1);
     tokenAccount12 = await _getOrCreateAssociatedTokenAccount(payer, mint12, user1);
@@ -166,6 +168,8 @@ describe("synft v2 burn", () => {
     tokenAccount15 = await _getOrCreateAssociatedTokenAccount(payer, mint15, user1);
     tokenAccount16 = await _getOrCreateAssociatedTokenAccount(payer, mint16, user1);
     tokenAccount14 = await _getOrCreateAssociatedTokenAccount(payer, mint14, user1);
+    tokenAccount17 = await _getOrCreateAssociatedTokenAccount(payer, mint17, user1);
+    tokenAccount18 = await _getOrCreateAssociatedTokenAccount(payer, mint18, user1);
 
 
     await _mintTo(payer, mint11, tokenAccount11, mintAuthority, 1);
@@ -174,6 +178,8 @@ describe("synft v2 burn", () => {
     await _mintTo(payer, mint15, tokenAccount15, mintAuthority, 1);
     await _mintTo(payer, mint16, tokenAccount16, mintAuthority, 1);
     await _mintTo(payer, mint14, tokenAccount14, mintAuthority, 1);
+    await _mintTo(payer, mint17, tokenAccount17, mintAuthority, 1);
+    await _mintTo(payer, mint18, tokenAccount18, mintAuthority, 1);
 
     await injectRoot(tokenAccount11, mint11, tokenAccount12, mint12, program, user1);
     await injectRoot(tokenAccount11, mint11, tokenAccount13, mint13, program, user1);
@@ -182,6 +188,7 @@ describe("synft v2 burn", () => {
     await injectNonRoot(tokenAccount11, mint11, tokenAccount12, mint12, tokenAccount16, mint16, program, user1);
 
     await injectSol(mint14, tokenAccount14, program, user1);
+    await injectRoot(tokenAccount17, mint17, tokenAccount18, mint18, program, user1);
   });
 
   let start_burn = async function(mint, token) {
@@ -631,6 +638,10 @@ describe("synft v2 burn", () => {
 
   it("start burn 2", async () => {
     await start_burn(mint14, tokenAccount14);
+  });
+
+  it("start burn 3", async () => {
+    await start_burn(mint17, tokenAccount17);
   });
 
   function sleep(s) {

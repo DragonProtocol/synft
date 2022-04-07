@@ -391,6 +391,8 @@ async function doCrank() {
         const  childOwner = await findProgramAddress("children-of", data.selfMint,  childData.selfMint);
         const childTokenAccount = await getTokenAccountByOwner(childOwner);
         if(0 == pubkey_array_len(childData.immediateChildren)) {
+          console.log("childData:", childData);
+          console.log("childTokenAccount:", childTokenAccount);
           await deal_single_new_root(data.selfMint, childData.selfMint, {address: tokenAccount}, {address: childTokenAccount});
         } else {
           for(const grandson of childData.immediateChildren) {
