@@ -237,9 +237,6 @@ pub fn handle_deal_single_new_root(ctx: Context<DealSingleNewRoot>) -> Result<()
     let token_program = &mut ctx.accounts.token_program;
     let old_root_owner = &mut ctx.accounts.old_root_owner;
 
-    parent_metadata.is_burnt = false;
-    reurn Ok(());
-
     if pubkey_array_len(&child_metadata.immediate_children) > 0 {
         panic!("handle_deal_single_new_root failed");
     }
