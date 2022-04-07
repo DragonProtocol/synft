@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED, ParentMetadata, PARENT_PDA_SEED};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED, ParentMetadata, PARENT_PDA_SEED, ErrorCode};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
@@ -66,6 +66,12 @@ impl<'info> InjectToRootV2<'info> {
 }
 
 pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, child_meta_bump: u8, parent_mata_bump: u8, parent_mata_of_child_bump: u8) -> Result<()> {
+    let parent_mint_key = ctx.accounts.parent_mint_account.to_account_info().key.as_ref();
+    let (_, pda_bump) = Pubkey::find_program_address(&[&PARENT_PDA_SEED[..], parent_mint_key], &(ctx.program_id));
+    if parent_mata_bump != pda_bump {
+        return err!(ErrorCode::InvalidMetadataBump);
+    } 
+
     ctx.accounts.children_meta.is_mutable = is_mutable;
     ctx.accounts.children_meta.bump = child_meta_bump;
     ctx.accounts.children_meta.child = *ctx.accounts.child_mint_account.to_account_info().key;

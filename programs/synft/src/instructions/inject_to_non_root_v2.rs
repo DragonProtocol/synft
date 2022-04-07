@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, ErrorCode, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
@@ -88,6 +88,11 @@ pub fn handler(
     child_bump: u8,
     parent_bump: u8,
 ) -> Result<()> {
+    let child_mint_key = ctx.accounts.child_mint_account.to_account_info().key.as_ref();
+    let (_, pda_bump) = Pubkey::find_program_address(&[&PARENT_PDA_SEED[..], child_mint_key], &(ctx.program_id));
+    if parent_bump != pda_bump {
+        return err!(ErrorCode::InvalidMetadataBump);
+    } 
     ctx.accounts.children_meta.is_mutable = is_mutable;
     ctx.accounts.children_meta.bump = child_bump;
     ctx.accounts.children_meta.child = *ctx.accounts.child_mint_account.to_account_info().key;
