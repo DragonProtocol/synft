@@ -765,72 +765,72 @@ describe("synft v2", () => {
   //    nft2
   //     |
   //    nft0 
-  it("Burn for SOL", async () => {
-    let connection = anchor.getProvider().connection;
-    // inject sol to nft2
-    const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
-        mint2.toBuffer(),
-      ],
-      program.programId
-    );
-    const [_parent_pda, _parent_bump] = await PublicKey.findProgramAddress(
-      [
-        Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
-        mint2.toBuffer(),
-      ],
-      program.programId
-    );
-    const inject_sol_amount = 500000000;
-    let user1Account = await anchor
-      .getProvider()
-      .connection.getAccountInfo(user1.publicKey);
-    const tokenAccount2Amount = user1Account.lamports;
-    let injectTx = await program.rpc.injectToSolV2(
-      _sol_bump,
-      new anchor.BN(inject_sol_amount),
-      {
-        accounts: {
-          currentOwner: user1.publicKey,
-          parentTokenAccount: tokenAccount2.address,
-          parentMintAccount: tokenAccount2.mint,
-          solAccount: _sol_pda,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        },
-        signers: [user1],
-      }
-    );
-    // volidate the balance of tokenAccount 1
-    let injectedUser1Account = await anchor
-      .getProvider()
-      .connection.getAccountInfo(user1.publicKey);
-    assert.ok(
-      injectedUser1Account.lamports,
-      Number(tokenAccount2Amount) - inject_sol_amount
-    );
-    // burn nft2 for sol
-    let burnTx = await program.rpc.burnV2(
-      _sol_bump,
-      _parent_bump,
-      {
-        accounts: {
-          currentOwner: user1.publicKey,
-          parentMintAccount: tokenAccount2.mint,
-          parentTokenAccount: tokenAccount2.address,
-          parentMetadata: _parent_pda,
-          solAccount: _sol_pda,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-        signers: [user1],
-      });
+  // it("Burn for SOL", async () => {
+  //   let connection = anchor.getProvider().connection;
+  //   // inject sol to nft2
+  //   const [_sol_pda, _sol_bump] = await PublicKey.findProgramAddress(
+  //     [
+  //       Buffer.from(anchor.utils.bytes.utf8.encode("sol-seed")),
+  //       mint2.toBuffer(),
+  //     ],
+  //     program.programId
+  //   );
+  //   const [_parent_pda, _parent_bump] = await PublicKey.findProgramAddress(
+  //     [
+  //       Buffer.from(anchor.utils.bytes.utf8.encode("parent-metadata-seed")),
+  //       mint2.toBuffer(),
+  //     ],
+  //     program.programId
+  //   );
+  //   const inject_sol_amount = 500000000;
+  //   let user1Account = await anchor
+  //     .getProvider()
+  //     .connection.getAccountInfo(user1.publicKey);
+  //   const tokenAccount2Amount = user1Account.lamports;
+  //   let injectTx = await program.rpc.injectToSolV2(
+  //     _sol_bump,
+  //     new anchor.BN(inject_sol_amount),
+  //     {
+  //       accounts: {
+  //         currentOwner: user1.publicKey,
+  //         parentTokenAccount: tokenAccount2.address,
+  //         parentMintAccount: tokenAccount2.mint,
+  //         solAccount: _sol_pda,
+  //         systemProgram: anchor.web3.SystemProgram.programId,
+  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  //       },
+  //       signers: [user1],
+  //     }
+  //   );
+  //   // volidate the balance of tokenAccount 1
+  //   let injectedUser1Account = await anchor
+  //     .getProvider()
+  //     .connection.getAccountInfo(user1.publicKey);
+  //   assert.ok(
+  //     injectedUser1Account.lamports,
+  //     Number(tokenAccount2Amount) - inject_sol_amount
+  //   );
+  //   // burn nft2 for sol
+  //   let burnTx = await program.rpc.burnV2(
+  //     _sol_bump,
+  //     _parent_bump,
+  //     {
+  //       accounts: {
+  //         currentOwner: user1.publicKey,
+  //         parentMintAccount: tokenAccount2.mint,
+  //         parentTokenAccount: tokenAccount2.address,
+  //         parentMetadata: _parent_pda,
+  //         solAccount: _sol_pda,
+  //         systemProgram: anchor.web3.SystemProgram.programId,
+  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  //         tokenProgram: TOKEN_PROGRAM_ID,
+  //       },
+  //       signers: [user1],
+  //     });
 
-    let solAccountAfter = await program.account.solAccount.fetchNullable(_sol_pda);
-    assert.ok(solAccountAfter === null);
-  });
+  //   let solAccountAfter = await program.account.solAccount.fetchNullable(_sol_pda);
+  //   assert.ok(solAccountAfter === null);
+  // });
 
   it("Initialize a tree ", async () => {
     mint11 = await _createMint(payer, mintAuthority);
