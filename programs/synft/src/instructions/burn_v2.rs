@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{
-    self, SetAuthority, Mint, Token, TokenAccount, Burn, CloseAccount,
+    self, SetAuthority, Mint, Token, TokenAccount, Burn,
 };
 use spl_token::instruction::AuthorityType;
 use crate::state::metadata::{
@@ -47,27 +47,27 @@ pub struct BurnV2<'info> {
 }
 
 
-impl<'info> BurnV2<'info> {
-    fn into_burn_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
-        let cpi_accounts = Burn {
-            mint: self.parent_mint_account.to_account_info().clone(),
-            to: self.parent_token_account.to_account_info().clone(),
-            authority: self.current_owner.to_account_info().clone(),
-        };
+// impl<'info> BurnV2<'info> {
+//     fn into_burn_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
+//         let cpi_accounts = Burn {
+//             mint: self.parent_mint_account.to_account_info().clone(),
+//             to: self.parent_token_account.to_account_info().clone(),
+//             authority: self.current_owner.to_account_info().clone(),
+//         };
 
-        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
-    }
-}
+//         CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
+//     }
+// }
 
-pub fn handler(ctx: Context<BurnV2>, _sol_account_bump: u8, _parent_metadata_bump: u8) -> Result<()> {
-    panic!("not supported");
-    ctx.accounts.parent_metadata.is_burnt = true;
-    token::burn(ctx.accounts.into_burn_context(), ctx.accounts.parent_token_account.amount)?;
-    ctx.accounts
-            .sol_account
-            .close(ctx.accounts.current_owner.to_account_info())?;
-    Ok(())
-}
+// pub fn handler(ctx: Context<BurnV2>, _sol_account_bump: u8, _parent_metadata_bump: u8) -> Result<()> {
+//     panic!("not supported");
+//     ctx.accounts.parent_metadata.is_burnt = true;
+//     token::burn(ctx.accounts.into_burn_context(), ctx.accounts.parent_token_account.amount)?;
+//     ctx.accounts
+//             .sol_account
+//             .close(ctx.accounts.current_owner.to_account_info())?;
+//     Ok(())
+// }
 
 // ------------------------------------------------------------------------------------------------------------------
 
@@ -91,15 +91,15 @@ fn into_burn_context<'info>(
 }
 
 
-fn into_close_account_context<'info>(
-    token_program: AccountInfo<'info>, 
-    account: AccountInfo<'info>,
-    destination: AccountInfo<'info>,
-    authority: AccountInfo<'info>,
-    ) -> CpiContext<'info, 'info, 'info, 'info, CloseAccount<'info>> {
-    let cpi_accounts = CloseAccount { account: account, destination: destination, authority: authority };
-    CpiContext::new(token_program, cpi_accounts)
-}
+// fn into_close_account_context<'info>(
+//     token_program: AccountInfo<'info>, 
+//     account: AccountInfo<'info>,
+//     destination: AccountInfo<'info>,
+//     authority: AccountInfo<'info>,
+//     ) -> CpiContext<'info, 'info, 'info, 'info, CloseAccount<'info>> {
+//     let cpi_accounts = CloseAccount { account: account, destination: destination, authority: authority };
+//     CpiContext::new(token_program, cpi_accounts)
+// }
 
 #[derive(Accounts)]
 pub struct StartBurn<'info> {

@@ -106,13 +106,13 @@ pub mod synft {
         instructions::extract_sol_v2::handler(ctx, _bump)
     }
 
-    pub fn burn_v2(
-        ctx: Context<BurnV2>,
-        _sol_account_bump: u8,
-        _parent_metadata_bump: u8,
-    ) -> Result<()> {
-        instructions::burn_v2::handler(ctx, _sol_account_bump, _parent_metadata_bump)
-    }
+    // pub fn burn_v2(
+    //     ctx: Context<BurnV2>,
+    //     _sol_account_bump: u8,
+    //     _parent_metadata_bump: u8,
+    // ) -> Result<()> {
+    //     instructions::burn_v2::handler(ctx, _sol_account_bump, _parent_metadata_bump)
+    // }
 
     pub fn transfer_crank_init_v2(ctx: Context<TransferCrankInit>) -> Result<()> {
         instructions::transfer_crank_init_v2::handler(ctx)
