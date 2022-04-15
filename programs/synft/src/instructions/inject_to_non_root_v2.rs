@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, ErrorCode, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT};
+use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT, ErrorCode};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;

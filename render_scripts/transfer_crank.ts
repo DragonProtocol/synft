@@ -133,7 +133,12 @@ async function fetchAllchildrenMetadataV2PDAs() {
       bytes: Base58.int_to_base58(1),
     },
   });
-  const pdas = await program.account.childrenMetadataV2.all(filter);
+  
+  let pdas: any = []; 
+  try {
+    pdas = await program.account.childrenMetadataV2.all(filter);
+  } catch(e) {}
+
   process.stdout.write("*");
   pdas.forEach(element => {
     console.log("pda.account:", element.account);
