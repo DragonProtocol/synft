@@ -14,15 +14,6 @@ pub const BRANCH_INFO_SEED: &[u8] = b"branch-info-seed";
 
 pub const TREE_LEVEL_HEIGHT_LIMIT: u8 = 3;
 
-#[account]
-pub struct ChildrenMetadata {
-    pub reversible: bool,
-    pub child: Pubkey,
-    // children is found via filtering their authority (1 to many)
-    // [ "childrenOf", pubkey, metaDataIndex ]
-    pub child_type: ChildType,
-    pub bump: u8,
-}
 
 #[account]
 pub struct ChildrenMetadataV2 {
