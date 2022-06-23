@@ -23,15 +23,15 @@ pub mod synft {
         ctx: Context<InjectToRootV2>,
         is_mutable: bool,
         child_meta_bump: u8,
-        parent_mata_bump: u8,
-        parent_mata_of_child_bump: u8,
+        parent_meta_bump: u8,
+        parent_meta_of_child_bump: u8,
     ) -> Result<()> {
         instructions::inject_to_root_v2::handler(
             ctx,
             is_mutable,
             child_meta_bump,
-            parent_mata_bump,
-            parent_mata_of_child_bump,
+            parent_meta_bump,
+            parent_meta_of_child_bump,
         )
     }
 

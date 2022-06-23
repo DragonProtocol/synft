@@ -65,10 +65,10 @@ impl<'info> InjectToRootV2<'info> {
     }
 }
 
-pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, child_meta_bump: u8, parent_mata_bump: u8, parent_mata_of_child_bump: u8) -> Result<()> {
+pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, child_meta_bump: u8, parent_meta_bump: u8, parent_meta_of_child_bump: u8) -> Result<()> {
     let parent_mint_key = ctx.accounts.parent_mint_account.to_account_info().key.as_ref();
     let (_, pda_bump) = Pubkey::find_program_address(&[&PARENT_PDA_SEED[..], parent_mint_key], &(ctx.program_id));
-    if parent_mata_bump != pda_bump {
+    if parent_meta_bump != pda_bump {
         return err!(ErrorCode::InvalidMetadataBump);
     } 
 
@@ -87,12 +87,12 @@ pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, child_meta_bump: 
     }
     ctx.accounts.parent_meta.height = 1;
     ctx.accounts.parent_meta.is_burnt = false;
-    ctx.accounts.parent_meta.bump = parent_mata_bump;
+    ctx.accounts.parent_meta.bump = parent_meta_bump;
     ctx.accounts.parent_meta.self_mint = *ctx.accounts.parent_mint_account.to_account_info().key;
 
     ctx.accounts.parent_meta_of_child.height = 2;
     ctx.accounts.parent_meta_of_child.is_burnt = false;
-    ctx.accounts.parent_meta_of_child.bump = parent_mata_of_child_bump;
+    ctx.accounts.parent_meta_of_child.bump = parent_meta_of_child_bump;
     ctx.accounts.parent_meta_of_child.self_mint = *ctx.accounts.child_mint_account.to_account_info().key;
 
     token::set_authority(
