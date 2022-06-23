@@ -61,7 +61,7 @@ async function getNFTMetadata(
   }
 }
 
-describe("synft v2", () => {
+describe("synft", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.Provider.env());
   const program = anchor.workspace.Synft as Program<Synft>;
@@ -415,7 +415,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx = await program.rpc.injectToRootV2(
+    let initTx = await program.rpc.injectToRoot(
       true,
       _metadata_bump_2_1,
       _parent_bump,
@@ -439,7 +439,7 @@ describe("synft v2", () => {
       }
     );
     // volidate metadata
-    let childrenMeta = await program.account.childrenMetadataV2.fetch(
+    let childrenMeta = await program.account.childrenMetadata.fetch(
       _metadata_pda_2_1
     );
     assert.ok(childrenMeta.isMutable == true);
@@ -462,7 +462,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx1 = await program.rpc.injectToRootV2(
+    let initTx1 = await program.rpc.injectToRoot(
       true,
       _metadata_bump_2_0,
       _parent_bump,
@@ -486,7 +486,7 @@ describe("synft v2", () => {
       }
     );
     // volidate metadata
-    let childrenMeta_2_0 = await program.account.childrenMetadataV2.fetch(
+    let childrenMeta_2_0 = await program.account.childrenMetadata.fetch(
       _metadata_pda_2_0
     );
     assert.ok(childrenMeta_2_0.isMutable == true);
@@ -530,7 +530,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx1 = await program.rpc.injectToRootV2(
+    let initTx1 = await program.rpc.injectToRoot(
       true,
       _root_metadata_bump,
       _nft3_parent_metadata_bump,
@@ -569,7 +569,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx2 = await program.rpc.injectToNonRootV2(
+    let initTx2 = await program.rpc.injectToNonRoot(
       true,
       _child_metadata_bump,
       _nft5_parent_metadata_bump,
@@ -596,7 +596,7 @@ describe("synft v2", () => {
       }
     );
     // volidate metadata
-    let childrenMeta = await program.account.childrenMetadataV2.fetch(
+    let childrenMeta = await program.account.childrenMetadata.fetch(
       _child_metadata_pda
     );
     assert.ok(childrenMeta.isMutable == true);
@@ -637,7 +637,7 @@ describe("synft v2", () => {
     //   program.programId
     // );
 
-    let initTx = await program.rpc.transferChildNftV2(_root_metadata_bump,
+    let initTx = await program.rpc.transferChildNft(_root_metadata_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -658,11 +658,11 @@ describe("synft v2", () => {
       }
     );
 
-    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(
+    let rootMeta = await program.account.childrenMetadata.fetchNullable(
       _root_metadata_pda
     );
     assert.isOk(rootMeta.isMutated == true);
-    // let parentMeta = await program.account.childrenMetadataV2.fetchNullable(
+    // let parentMeta = await program.account.childrenMetadata.fetchNullable(
     //   _parent_meta_pda
     // );
     // assert.isOk(parentMeta.isMutated == true);
@@ -689,7 +689,7 @@ describe("synft v2", () => {
       .connection.getAccountInfo(user1.publicKey);
     const tokenAccount2Amount = user1Account.lamports;
 
-    let initTx = await program.rpc.injectToSolV2(
+    let initTx = await program.rpc.injectToSol(
       _sol_bump,
       new anchor.BN(inject_sol_amount),
       {
@@ -739,7 +739,7 @@ describe("synft v2", () => {
     //   program.programId
     // );
     getAccount(connection, _sol_pda); // account exists
-    let extractTx = await program.rpc.extractSolV2(_sol_bump, {
+    let extractTx = await program.rpc.extractSol(_sol_bump, {
       accounts: {
         currentOwner: user1.publicKey,
         parentTokenAccount: tokenAccount2.address,
@@ -787,7 +787,7 @@ describe("synft v2", () => {
   //     .getProvider()
   //     .connection.getAccountInfo(user1.publicKey);
   //   const tokenAccount2Amount = user1Account.lamports;
-  //   let injectTx = await program.rpc.injectToSolV2(
+  //   let injectTx = await program.rpc.injectToSol(
   //     _sol_bump,
   //     new anchor.BN(inject_sol_amount),
   //     {
@@ -811,7 +811,7 @@ describe("synft v2", () => {
   //     Number(tokenAccount2Amount) - inject_sol_amount
   //   );
   //   // burn nft2 for sol
-  //   let burnTx = await program.rpc.burnV2(
+  //   let burnTx = await program.rpc.burn(
   //     _sol_bump,
   //     _parent_bump,
   //     {
@@ -895,7 +895,7 @@ describe("synft v2", () => {
     const [_root_metadata_pda, _root_metadata_bump] = await _findChildrenMetaPda(mint11, mint12, program);
 
     // transfer 
-    let transferTx = await program.rpc.transferChildNftV2(_root_metadata_bump,
+    let transferTx = await program.rpc.transferChildNft(_root_metadata_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -927,7 +927,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx = await program.rpc.transferCrankInitV2(
+    let initTx = await program.rpc.transferCrankInit(
       {
         accounts: {
           operator: user1.publicKey,
@@ -960,7 +960,7 @@ describe("synft v2", () => {
     // crank process
     const [_children_metadata_pda_12_15, _children_metadata_bump_12_15] = await _findChildrenMetaPda(mint12, mint15, program);
     const [_nft15_parent_metadata_pda, _nft15_parent_metadata_bump] = await _findParentMetaPda(mint15, program);
-    let processTx15 = await program.rpc.transferCrankProcessV2(
+    let processTx15 = await program.rpc.transferCrankProcess(
       {
         accounts: {
           operator: user1.publicKey,
@@ -986,7 +986,7 @@ describe("synft v2", () => {
     let parentMetaNft15 = await program.account.parentMetadata.fetch(
       _nft15_parent_metadata_pda
     );
-    let childrenMeta12To15 = await program.account.childrenMetadataV2.fetch(
+    let childrenMeta12To15 = await program.account.childrenMetadata.fetch(
       _children_metadata_pda_12_15
     );
     crankMetadata.notProcessedChildren.forEach(element => assert.ok(element.toBase58() != mint15.toBase58()));
@@ -995,7 +995,7 @@ describe("synft v2", () => {
 
     const [_children_metadata_pda_12_16, _children_metadata_bump_12_16] = await _findChildrenMetaPda(mint12, mint16, program);
     const [_nft16_parent_metadata_pda, _nft16_parent_metadata_bump] = await _findParentMetaPda(mint16, program);
-    let processTx16 = await program.rpc.transferCrankProcessV2(
+    let processTx16 = await program.rpc.transferCrankProcess(
       {
         accounts: {
           operator: user1.publicKey,
@@ -1016,7 +1016,7 @@ describe("synft v2", () => {
     let parentMetaNft16 = await program.account.parentMetadata.fetch(
       _nft16_parent_metadata_pda
     );
-    let childrenMeta12To16 = await program.account.childrenMetadataV2.fetch(
+    let childrenMeta12To16 = await program.account.childrenMetadata.fetch(
       _children_metadata_pda_12_16
     );
     crankMetadata.notProcessedChildren.forEach(element => assert.ok(element.toBase58() != mint16.toBase58()));
@@ -1025,7 +1025,7 @@ describe("synft v2", () => {
 
     const [_children_metadata_pda_12_17, _children_metadata_bump_12_17] = await _findChildrenMetaPda(mint12, mint17, program);
     const [_nft17_parent_metadata_pda, _nft17_parent_metadata_bump] = await _findParentMetaPda(mint17, program);
-    let processTx17 = await program.rpc.transferCrankProcessV2(
+    let processTx17 = await program.rpc.transferCrankProcess(
       {
         accounts: {
           operator: user1.publicKey,
@@ -1046,7 +1046,7 @@ describe("synft v2", () => {
     let parentMetaNft17 = await program.account.parentMetadata.fetch(
       _nft17_parent_metadata_pda
     );
-    let childrenMeta12To17 = await program.account.childrenMetadataV2.fetch(
+    let childrenMeta12To17 = await program.account.childrenMetadata.fetch(
       _children_metadata_pda_12_17
     );
     crankMetadata.notProcessedChildren.forEach(element => assert.ok(element.toBase58() != mint17.toBase58()));
@@ -1054,7 +1054,7 @@ describe("synft v2", () => {
     assert.ok(childrenMeta12To17.root.toBase58() == _children_metadata_pda_12_17.toBase58());
 
     // crank end
-    let endTx = await program.rpc.transferCrankEndV2(
+    let endTx = await program.rpc.transferCrankEnd(
       {
         accounts: {
           operator: user1.publicKey,
@@ -1068,7 +1068,7 @@ describe("synft v2", () => {
         signers: [user1],
       }
     );
-    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(_root_metadata_pda);
+    let rootMeta = await program.account.childrenMetadata.fetchNullable(_root_metadata_pda);
     assert.isNull(rootMeta);
     let crankMeta = await program.account.crankMetadata.fetchNullable(_crank_metadata_pda);
     assert.isNull(crankMeta);
@@ -1079,7 +1079,7 @@ describe("synft v2", () => {
     const [_root_metadata_pda, _root_metadata_bump] = await _findChildrenMetaPda(mint11, mint13, program);
 
     // transfer 
-    let transferTx = await program.rpc.transferChildNftV2(_root_metadata_bump,
+    let transferTx = await program.rpc.transferChildNft(_root_metadata_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -1111,7 +1111,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx = await program.rpc.transferCrankInitV2(
+    let initTx = await program.rpc.transferCrankInit(
       {
         accounts: {
           operator: user1.publicKey,
@@ -1139,7 +1139,7 @@ describe("synft v2", () => {
     assert.ok(crankMetadata.closedChildrenMetaData.toString() == _root_metadata_pda.toString());
 
     // crank end
-    let endTx = await program.rpc.transferCrankEndV2(
+    let endTx = await program.rpc.transferCrankEnd(
       {
         accounts: {
           operator: user1.publicKey,
@@ -1154,7 +1154,7 @@ describe("synft v2", () => {
       }
     );
 
-    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(_root_metadata_pda);
+    let rootMeta = await program.account.childrenMetadata.fetchNullable(_root_metadata_pda);
     assert.isNull(rootMeta);
     let crankMeta = await program.account.crankMetadata.fetchNullable(_crank_metadata_pda);
     assert.isNull(crankMeta);
@@ -1166,7 +1166,7 @@ describe("synft v2", () => {
     const [_children_metadata_of_parent_pda, _children_metadata_of_parent_bump] = await _findChildrenMetaPda(mint14, mint21, program);
 
     // transfer 
-    let transferTx = await program.rpc.transferChildNftV2(_children_metadata_of_parent_bump,
+    let transferTx = await program.rpc.transferChildNft(_children_metadata_of_parent_bump,
       {
         accounts: {
           currentOwner: user1.publicKey,
@@ -1200,7 +1200,7 @@ describe("synft v2", () => {
       ],
       program.programId
     );
-    let initTx = await program.rpc.transferCrankInitV2(
+    let initTx = await program.rpc.transferCrankInit(
       {
         accounts: {
           operator: user1.publicKey,
@@ -1229,7 +1229,7 @@ describe("synft v2", () => {
     assert.ok(crankMetadata.closedChildrenMetaData.toString() == _children_metadata_pda_14_21.toString());
 
     // crank end
-    let endTx = await program.rpc.transferCrankEndV2(
+    let endTx = await program.rpc.transferCrankEnd(
       {
         accounts: {
           operator: user1.publicKey,
@@ -1244,11 +1244,11 @@ describe("synft v2", () => {
       }
     );
 
-    let meta_14_21 = await program.account.childrenMetadataV2.fetchNullable(_children_metadata_pda_14_21);
+    let meta_14_21 = await program.account.childrenMetadata.fetchNullable(_children_metadata_pda_14_21);
     assert.isNull(meta_14_21);
     let crankMeta = await program.account.crankMetadata.fetchNullable(_crank_metadata_pda);
     assert.isNull(crankMeta);
-    let rootMeta = await program.account.childrenMetadataV2.fetchNullable(_root_metadata_pda);
+    let rootMeta = await program.account.childrenMetadata.fetchNullable(_root_metadata_pda);
     assert.isOk(!rootMeta.isMutated);
   });
 });
@@ -1348,7 +1348,7 @@ async function injectNonRoot(rootToken, rootMint, parentToken, parentMint, child
     ],
     program.programId
   );
-  let initTx2 = await program.rpc.injectToNonRootV2(
+  let initTx2 = await program.rpc.injectToNonRoot(
     true,
     _child_metadata_bump,
     _parent_metadata_of_child_bump,
@@ -1399,7 +1399,7 @@ async function injectRoot(parentToken, parentMint, childToken, childMint, progra
     ],
     program.programId
   );
-  let initTx = await program.rpc.injectToRootV2(
+  let initTx = await program.rpc.injectToRoot(
     true,
     _metadata_bump,
     _parent_meta_bump,

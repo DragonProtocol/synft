@@ -6,7 +6,7 @@ use std::mem::size_of;
 
 #[derive(Accounts)]
 #[instruction(_bump: u8)]
-pub struct ExtractSolV2<'info> {
+pub struct ExtractSol<'info> {
     #[account(mut)]
     pub current_owner: Signer<'info>,
     #[account(mut)]
@@ -27,7 +27,7 @@ pub struct ExtractSolV2<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(ctx: Context<ExtractSolV2>, _bump: u8) -> Result<()> {
+pub fn handler(ctx: Context<ExtractSol>, _bump: u8) -> Result<()> {
     ctx.accounts
         .sol_account
         .close(ctx.accounts.current_owner.to_account_info())?;

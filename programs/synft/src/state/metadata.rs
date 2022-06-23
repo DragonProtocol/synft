@@ -14,9 +14,8 @@ pub const BRANCH_INFO_SEED: &[u8] = b"branch-info-seed";
 
 pub const TREE_LEVEL_HEIGHT_LIMIT: u8 = 3;
 
-
 #[account]
-pub struct ChildrenMetadataV2 {
+pub struct ChildrenMetadata {
     // parent, child refer to "mint"
     pub child: Pubkey,
     pub parent: Pubkey,
@@ -26,6 +25,7 @@ pub struct ChildrenMetadataV2 {
     pub is_mutated: bool,
     pub child_type: ChildType,
     pub bump: u8,
+    _reserved: [u8; 64],
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, PartialEq)]
@@ -41,6 +41,7 @@ pub struct CrankMetadata {
     pub old_children_root_meta_data: Pubkey, // old root meta data
     pub closed_children_meta_data: Pubkey,  // need to close
     pub not_processed_children: [Pubkey; 8], // children nodes that have not been processed
+    _reserved: [u8; 64],
 }
 
 impl CrankMetadata{
@@ -61,6 +62,7 @@ pub struct ParentMetadata {
     pub height: u8,
     pub self_mint: Pubkey, //pointer to self
     pub immediate_children: [Pubkey; 3], //pointer to immediate children
+    _reserved: [u8; 64],
 }
 
 impl ParentMetadata{
@@ -77,22 +79,25 @@ impl ParentMetadata{
 #[account]
 pub struct SolAccount {
     pub bump: u8,
-    pub reserve_buffer: [Pubkey; 12],
+    _reserved: [u8; 64],
 }
 
 #[account]
 pub struct NewRootInfo {
     pub branch_finished: u32,
     pub root: Pubkey,
+    _reserved: [u8; 64],
 }
 
 #[account]
 pub struct BranchInfo {
+    _reserved: [u8; 64],
 }
 
 #[account]
 pub struct RootOwner {
-    pub owner: Pubkey
+    pub owner: Pubkey,
+    _reserved: [u8; 64],
 }
 
 #[error_code]

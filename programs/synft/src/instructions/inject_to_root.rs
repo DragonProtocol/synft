@@ -1,11 +1,11 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, CHILDREN_PDA_SEED, ParentMetadata, PARENT_PDA_SEED, ErrorCode};
+use crate::state::metadata::{ChildType, ChildrenMetadata, CHILDREN_PDA_SEED, ParentMetadata, PARENT_PDA_SEED, ErrorCode};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
 use std::mem::size_of;
 
 #[derive(Accounts)]
-pub struct InjectToRootV2<'info> {
+pub struct InjectToRoot<'info> {
     // Do this instruction when the parent do NOT has any metadata associated
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
@@ -28,10 +28,10 @@ pub struct InjectToRootV2<'info> {
     #[account(
         init,
         payer = current_owner,
-        space = 8 + size_of::<ChildrenMetadataV2>(),
+        space = 8 + size_of::<ChildrenMetadata>(),
         seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump
     )]
-    pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta: Box<Account<'info, ChildrenMetadata>>,
     #[account(
         init_if_needed, 
         payer = current_owner,
@@ -54,7 +54,7 @@ pub struct InjectToRootV2<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> InjectToRootV2<'info> {
+impl<'info> InjectToRoot<'info> {
     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
         let cpi_accounts = SetAuthority {
             account_or_mint: self.child_token_account.to_account_info(),
@@ -65,7 +65,7 @@ impl<'info> InjectToRootV2<'info> {
     }
 }
 
-pub fn handler(ctx: Context<InjectToRootV2>, is_mutable: bool, child_meta_bump: u8, parent_meta_bump: u8, parent_meta_of_child_bump: u8) -> Result<()> {
+pub fn handler(ctx: Context<InjectToRoot>, is_mutable: bool, child_meta_bump: u8, parent_meta_bump: u8, parent_meta_of_child_bump: u8) -> Result<()> {
     let parent_mint_key = ctx.accounts.parent_mint_account.to_account_info().key.as_ref();
     let (_, pda_bump) = Pubkey::find_program_address(&[&PARENT_PDA_SEED[..], parent_mint_key], &(ctx.program_id));
     if parent_meta_bump != pda_bump {

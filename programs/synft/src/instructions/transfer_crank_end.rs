@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata};
+use crate::state::metadata::{ChildrenMetadata, CrankMetadata, ErrorCode, ParentMetadata};
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
 
@@ -12,12 +12,12 @@ pub struct TransferCrankEnd<'info> {
         constraint = children_meta_of_root.is_mutable == true,
         constraint = children_meta_of_root.is_mutated == true,
     )]
-    pub children_meta_of_root: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta_of_root: Box<Account<'info, ChildrenMetadata>>,
     #[account(
         mut,
         constraint = crank_meta.closed_children_meta_data == children_meta_of_close.key(),
     )]
-    pub children_meta_of_close: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta_of_close: Box<Account<'info, ChildrenMetadata>>,
     #[account(
        mut,
         constraint = parent_meta.is_burnt == false,

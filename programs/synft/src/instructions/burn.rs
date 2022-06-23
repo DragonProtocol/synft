@@ -5,71 +5,12 @@ use anchor_spl::token::{
 use spl_token::instruction::AuthorityType;
 use crate::state::metadata::{
     CRANK_PDA_SEED, CHILDREN_PDA_SEED, PARENT_PDA_SEED, SOL_PDA_SEED, NEW_ROOT_INFO_SEED, BRANCH_INFO_SEED, ROOT_OWNER_SEED, 
-    ParentMetadata, SolAccount, CrankMetadata, ChildrenMetadataV2, NewRootInfo, BranchInfo, RootOwner,
+    ParentMetadata, SolAccount, CrankMetadata, ChildrenMetadata, NewRootInfo, BranchInfo, RootOwner,
     pubkey_array_append, pubkey_array_all_empty, pubkey_array_find, pubkey_array_len, pubkey_array_remove,
 };
 use anchor_lang::AccountsClose;
 use std::mem::size_of;
 
-#[derive(Accounts)]
-#[instruction( _sol_account_bump: u8, _parent_metadata_bump: u8)]
-pub struct BurnV2<'info> {
-    #[account(mut)]
-    pub current_owner: Signer<'info>,
-    #[account(mut)]
-    pub parent_mint_account: Account<'info, Mint>,
-    #[account(mut)]
-    pub parent_token_account: Account<'info, TokenAccount>,
-    #[account(
-        init_if_needed,
-        payer = current_owner,
-        space = size_of::<ParentMetadata>() + 8,
-        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
-        constraint = parent_token_account.mint == parent_mint_account.key(),
-        constraint = parent_metadata.is_burnt == false,
-        seeds = [PARENT_PDA_SEED, parent_mint_account.key().as_ref()], bump,
-    )]
-    pub parent_metadata : Account<'info, ParentMetadata>,
-    #[account(
-        init_if_needed,
-        payer = current_owner,
-        space = size_of::<SolAccount>() + 8,
-        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
-        constraint = parent_token_account.mint == parent_mint_account.key(),
-        constraint = sol_account.bump == _sol_account_bump,
-        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump,
-    )]
-    pub sol_account : Account<'info, SolAccount>,
-
-    pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
-    pub token_program: Program<'info, Token>,
-}
-
-
-// impl<'info> BurnV2<'info> {
-//     fn into_burn_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
-//         let cpi_accounts = Burn {
-//             mint: self.parent_mint_account.to_account_info().clone(),
-//             to: self.parent_token_account.to_account_info().clone(),
-//             authority: self.current_owner.to_account_info().clone(),
-//         };
-
-//         CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
-//     }
-// }
-
-// pub fn handler(ctx: Context<BurnV2>, _sol_account_bump: u8, _parent_metadata_bump: u8) -> Result<()> {
-//     panic!("not supported");
-//     ctx.accounts.parent_metadata.is_burnt = true;
-//     token::burn(ctx.accounts.into_burn_context(), ctx.accounts.parent_token_account.amount)?;
-//     ctx.accounts
-//             .sol_account
-//             .close(ctx.accounts.current_owner.to_account_info())?;
-//     Ok(())
-// }
-
-// ------------------------------------------------------------------------------------------------------------------
 
 fn into_set_authority_context<'info>(
     token_program: AccountInfo<'info>, 
@@ -90,16 +31,6 @@ fn into_burn_context<'info>(
     CpiContext::new(token_program, cpi_accounts)
 }
 
-
-// fn into_close_account_context<'info>(
-//     token_program: AccountInfo<'info>, 
-//     account: AccountInfo<'info>,
-//     destination: AccountInfo<'info>,
-//     authority: AccountInfo<'info>,
-//     ) -> CpiContext<'info, 'info, 'info, 'info, CloseAccount<'info>> {
-//     let cpi_accounts = CloseAccount { account: account, destination: destination, authority: authority };
-//     CpiContext::new(token_program, cpi_accounts)
-// }
 
 #[derive(Accounts)]
 pub struct StartBurn<'info> {
@@ -213,7 +144,7 @@ pub struct DealSingleNewRoot<'info> {
         constraint = children_metadata.is_mutated == false,
         seeds = [CHILDREN_PDA_SEED, parent_mint.key().as_ref(), child_mint.key().as_ref()], bump,
     )]
-    pub children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_metadata : Box<Account<'info, ChildrenMetadata>>,
 
     #[account(mut,
         seeds = [ROOT_OWNER_SEED, parent_mint.key().as_ref()], bump,
@@ -320,7 +251,7 @@ pub struct StartBranch<'info> {
         constraint = children_metadata.is_mutated == false,
         seeds = [CHILDREN_PDA_SEED, parent_mint.key().as_ref(), child_mint.key().as_ref()], bump,
     )]
-    pub children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_metadata : Box<Account<'info, ChildrenMetadata>>,
     
     #[account(mut)]
     pub grandson_mint: Box<Account<'info, Mint>>,
@@ -334,7 +265,7 @@ pub struct StartBranch<'info> {
     #[account(mut,
         seeds = [CHILDREN_PDA_SEED, child_mint.key().as_ref(), grandson_mint.key().as_ref()], bump,
     )]
-    pub grandson_children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
+    pub grandson_children_metadata : Box<Account<'info, ChildrenMetadata>>,
 
     #[account(
         init,
@@ -466,7 +397,7 @@ pub struct UpdateBranch<'info> {
     #[account(mut,
         seeds = [CHILDREN_PDA_SEED, parent_mint.key().as_ref(), child_mint.key().as_ref()], bump,
     )]
-    pub children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_metadata : Box<Account<'info, ChildrenMetadata>>,
 
     #[account(mut)]
     pub old_root_mint: Account<'info, Mint>,
@@ -490,7 +421,7 @@ pub struct UpdateBranch<'info> {
     #[account(mut,
         seeds = [CHILDREN_PDA_SEED, old_root_mint.key().as_ref(), new_root_mint.key().as_ref()], bump,
     )]
-    pub root_children_metadata : Box<Account<'info, ChildrenMetadataV2>>,
+    pub root_children_metadata : Box<Account<'info, ChildrenMetadata>>,
 
     #[account(mut)]
     pub grandson_mint: Account<'info, Mint>,

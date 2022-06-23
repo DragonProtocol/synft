@@ -1,5 +1,5 @@
 use crate::state::metadata::{
-    ChildrenMetadataV2, CrankMetadata, ParentMetadata, CRANK_PDA_SEED, PARENT_PDA_SEED,
+    ChildrenMetadata, CrankMetadata, ParentMetadata, CRANK_PDA_SEED, PARENT_PDA_SEED,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
@@ -17,14 +17,14 @@ pub struct TransferCrankInit<'info> {
         constraint = children_meta_of_parent.is_mutated == true,
         constraint = children_meta_of_parent.child == child_mint_account.key(),
     )]
-    pub children_meta_of_parent: Account<'info, ChildrenMetadataV2>,
+    pub children_meta_of_parent: Account<'info, ChildrenMetadata>,
     #[account(
         mut,
         constraint = children_meta_of_root.root == children_meta_of_root.key(),
         constraint = children_meta_of_root.is_mutable == true,
         constraint = children_meta_of_root.is_mutated == true,
     )]
-    pub children_meta_of_root: Account<'info, ChildrenMetadataV2>,
+    pub children_meta_of_root: Account<'info, ChildrenMetadata>,
     #[account(
         init_if_needed,
         payer = operator,

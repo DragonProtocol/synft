@@ -7,7 +7,7 @@ use solana_program::system_instruction;
 use std::mem::size_of;
 
 #[derive(Accounts)]
-pub struct InjectSolV2<'info> {
+pub struct InjectSol<'info> {
     // Do this instruction when the parent do NOT has any metadata associated
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
@@ -29,7 +29,7 @@ pub struct InjectSolV2<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(ctx: Context<InjectSolV2>, _bump: u8, inject_sol_amount: u64) -> Result<()> {
+pub fn handler(ctx: Context<InjectSol>, _bump: u8, inject_sol_amount: u64) -> Result<()> {
     ctx.accounts.sol_account.bump = _bump;
 
     invoke(

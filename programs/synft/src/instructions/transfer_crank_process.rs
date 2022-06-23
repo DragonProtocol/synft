@@ -1,4 +1,4 @@
-use crate::state::metadata::{ChildrenMetadataV2, CrankMetadata, ErrorCode, ParentMetadata};
+use crate::state::metadata::{ChildrenMetadata, CrankMetadata, ErrorCode, ParentMetadata};
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 
@@ -11,7 +11,7 @@ pub struct TransferCrankProcess<'info> {
         mut,
         constraint = children_meta.child == child_mint_account.key(),
     )]
-    pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta: Box<Account<'info, ChildrenMetadata>>,
     #[account(
        mut,
        constraint = parent_meta.self_mint == child_mint_account.key(),
