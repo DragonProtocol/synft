@@ -77,6 +77,7 @@ impl ParentMetadata{
 #[account]
 pub struct SolAccount {
     pub bump: u8,
+    pub reserve_buffer: [Pubkey; 12],
 }
 
 #[account]
