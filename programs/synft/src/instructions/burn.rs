@@ -24,10 +24,10 @@ fn into_set_authority_context<'info>(
 fn into_burn_context<'info>(
     token_program: AccountInfo<'info>, 
     mint: AccountInfo<'info>, 
-    to: AccountInfo<'info>, 
+    from: AccountInfo<'info>, 
     authority: AccountInfo<'info>
     ) -> CpiContext<'info, 'info, 'info, 'info, Burn<'info>> {
-    let cpi_accounts = Burn { mint: mint, from: to, authority: authority };
+    let cpi_accounts = Burn { mint: mint, from: from, authority: authority };
     CpiContext::new(token_program, cpi_accounts)
 }
 
