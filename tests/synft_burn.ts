@@ -63,9 +63,9 @@ async function getNFTMetadata(
   }
 }
 
-describe("synft v2 burn", () => {
+describe("synft burn", () => {
   // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.Provider.env());
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Synft as Program<Synft>;
 
   /**
@@ -671,8 +671,8 @@ describe("synft v2 burn", () => {
     const a15 = await getAccountInfo(tokenAccount15.address);
     const a16 = await getAccountInfo(tokenAccount16.address);
 
-    const c15 = await fetchAccount("15 children metadata", "children-of", mint12, mint15, "childrenMetadataV2");
-    const c16 = await fetchAccount("16 children metadata", "children-of", mint12, mint16, "childrenMetadataV2");
+    const c15 = await fetchAccount("15 children metadata", "children-of", mint12, mint15, "childrenMetadata");
+    const c16 = await fetchAccount("16 children metadata", "children-of", mint12, mint16, "childrenMetadata");
 
     assert.ok(a12.owner.toString() == user1.publicKey.toString());
     assert.ok(a13.owner.toString() == user1.publicKey.toString());
@@ -687,8 +687,8 @@ describe("synft v2 burn", () => {
 
     assert.ok(checkNonExistAccount("11 sol account", "sol-seed", mint11, null, "solAccount"));
     assert.ok(checkNonExistAccount("11 parent metadata", "parent-metadata-seed", mint11, null, "parentMetadata"));
-    assert.ok(checkNonExistAccount("12 children metadata", "children-of", mint11, mint12, "childrenMetadataV2"));
-    assert.ok(checkNonExistAccount("13 children metadata", "children-of", mint11, mint13, "childrenMetadataV2"));
+    assert.ok(checkNonExistAccount("12 children metadata", "children-of", mint11, mint12, "childrenMetadata"));
+    assert.ok(checkNonExistAccount("13 children metadata", "children-of", mint11, mint13, "childrenMetadata"));
   });
 
 
@@ -774,7 +774,7 @@ async function injectNonRoot(rootToken, rootMint, parentToken, parentMint, child
     ],
     program.programId
   );
-  let initTx2 = await program.rpc.injectToNonRootV2(
+  let initTx2 = await program.rpc.injectToNonRoot(
     true,
     _child_metadata_bump,
     _parent_metadata_of_child_bump,
@@ -825,7 +825,7 @@ async function injectRoot(parentToken, parentMint, childToken, childMint, progra
     ],
     program.programId
   );
-  let initTx = await program.rpc.injectToRootV2(
+  let initTx = await program.rpc.injectToRoot(
     true,
     _metadata_bump,
     _parent_meta_bump,

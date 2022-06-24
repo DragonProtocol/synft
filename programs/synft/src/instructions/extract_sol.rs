@@ -1,13 +1,8 @@
 use anchor_lang::prelude::*;
-
-use anchor_spl::token::{
-   TokenAccount, Mint
-};
-
-use crate::state::metadata::{
-    CHILDREN_PDA_SEED, ChildrenMetadata, ErrorCode
-};
-
+use anchor_spl::token::{Mint, TokenAccount};
+use crate::state::metadata::{SolAccount, SOL_PDA_SEED};
+use anchor_lang::AccountsClose;
+use std::mem::size_of;
 
 #[derive(Accounts)]
 #[instruction(_bump: u8)]
@@ -18,26 +13,23 @@ pub struct ExtractSol<'info> {
     pub parent_token_account: Account<'info, TokenAccount>,
     pub parent_mint_account: Account<'info, Mint>,
     #[account(
-        mut,
-        // owner--> parent_mint_account--> children_meta --> chilren_token_account
+        init_if_needed,
+        payer = current_owner,
+        space = size_of::<SolAccount>() + 8,
         constraint = parent_token_account.owner == *current_owner.to_account_info().key,
-        constraint = children_meta.bump == _bump,
         constraint = parent_token_account.mint == parent_mint_account.key(),
-        seeds =  [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref()], 
-        bump = children_meta.bump,
-        close = current_owner
+        constraint = sol_account.bump == _bump,
+        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump,
     )]
-    children_meta: Box<Account<'info, ChildrenMetadata>>,
+    pub sol_account: Account<'info, SolAccount>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(ctx: Context<ExtractSol>, _bump: u8) -> Result<()> {
-    if !ctx.accounts.children_meta.reversible {
-        return err!(ErrorCode::InvalidExtractAttempt);
-    }
-
-    // close meta_data account
+    ctx.accounts
+        .sol_account
+        .close(ctx.accounts.current_owner.to_account_info())?;
     Ok(())
 }

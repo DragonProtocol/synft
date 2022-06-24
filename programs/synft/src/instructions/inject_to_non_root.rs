@@ -1,11 +1,11 @@
-use crate::state::metadata::{ChildType, ChildrenMetadataV2, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT, ErrorCode};
+use crate::state::metadata::{ChildType, ChildrenMetadata, ParentMetadata, CHILDREN_PDA_SEED, PARENT_PDA_SEED, TREE_LEVEL_HEIGHT_LIMIT, ErrorCode};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority, Token, TokenAccount};
 use spl_token::instruction::AuthorityType;
 use std::mem::size_of;
 
 #[derive(Accounts)]
-pub struct InjectToNonRootV2<'info> {
+pub struct InjectToNonRoot<'info> {
     // Do this instruction when the parent do NOT has any metadata associated
     // with it. This is checked offchain before sending this tx.
     #[account(mut)]
@@ -34,21 +34,21 @@ pub struct InjectToNonRootV2<'info> {
     #[account(
         init,
         payer = current_owner,
-        space = 8 + size_of::<ChildrenMetadataV2>(),
+        space = 8 + size_of::<ChildrenMetadata>(),
         seeds = [CHILDREN_PDA_SEED, parent_mint_account.key().as_ref(), child_mint_account.key().as_ref()], bump
     )]
-    pub children_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta: Box<Account<'info, ChildrenMetadata>>,
     #[account(
         constraint = children_meta_of_parent.root != parent_mint_account.key(),
         constraint = children_meta_of_parent.root == root_meta.key(),
     )]
-    pub children_meta_of_parent: Box<Account<'info, ChildrenMetadataV2>>,
+    pub children_meta_of_parent: Box<Account<'info, ChildrenMetadata>>,
     #[account(
         constraint = root_meta.root == root_meta.key(),
         constraint = root_meta.is_mutable == true,
         constraint = root_meta.is_mutated == false,
     )]
-    pub root_meta: Box<Account<'info, ChildrenMetadataV2>>,
+    pub root_meta: Box<Account<'info, ChildrenMetadata>>,
     #[account(
         init_if_needed, 
         payer = current_owner,
@@ -71,7 +71,7 @@ pub struct InjectToNonRootV2<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> InjectToNonRootV2<'info> {
+impl<'info> InjectToNonRoot<'info> {
     fn into_set_authority_context(&self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>> {
         let cpi_accounts = SetAuthority {
             account_or_mint: self.child_token_account.to_account_info(),
@@ -83,7 +83,7 @@ impl<'info> InjectToNonRootV2<'info> {
 }
 
 pub fn handler(
-    ctx: Context<InjectToNonRootV2>,
+    ctx: Context<InjectToNonRoot>,
     is_mutable: bool,
     child_bump: u8,
     parent_bump: u8,
