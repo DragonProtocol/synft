@@ -17,9 +17,9 @@ default = ["init-if-needed"]
 init-if-needed = ["anchor-derive-accounts/init-if-needed"]
 
 [dependencies]
-anchor-lang = "0.22.0"
+anchor-lang = "0.24.2"
 solana-program = "1.6.12"
-anchor-derive-accounts = {version = "0.22.0"}
-anchor-spl = {version = "0.22.0"}
+anchor-derive-accounts = {version = "0.24.2"}
+anchor-spl = {version = "0.24.2"}
 spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
 mpl-token-metadata = { version = "1.2.5", features = ["no-entrypoint"] }

@@ -27,7 +27,7 @@ fn into_burn_context<'info>(
     to: AccountInfo<'info>, 
     authority: AccountInfo<'info>
     ) -> CpiContext<'info, 'info, 'info, 'info, Burn<'info>> {
-    let cpi_accounts = Burn { mint: mint, to: to, authority: authority };
+    let cpi_accounts = Burn { mint: mint, from: to, authority: authority };
     CpiContext::new(token_program, cpi_accounts)
 }
 
