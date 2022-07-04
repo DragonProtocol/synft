@@ -1,9 +1,9 @@
 use std::mem::size_of;
 
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token::{Mint, TokenAccount};
 use mpl_token_metadata::ID as TokenMetadataProgramId;
-use mpl_token_metadata::{state::{Metadata, Collection}, utils::{assert_initialized, assert_currently_holding}};
+use mpl_token_metadata::{state::{Metadata, Collection}, utils::assert_currently_holding};
 use solana_program::{
     program_memory::sol_memcmp,
     pubkey::{Pubkey, PUBKEY_BYTES},
@@ -47,7 +47,6 @@ pub fn handle_update_snowball_nft(ctx: Context<UpdateSnowballNft>) -> Result<()>
         &ctx.accounts.collection_mint.key()
     )?;
 
-    // TODO check payer is signer，check payer is nft owner
     if !ctx.accounts.payer.is_signer {
         return err!(SynftError::MissingRequiredSignature);
     }
@@ -86,6 +85,8 @@ pub fn handle_extract_snowball_nft_sol_to_user(ctx: Context<ExtractSolToUser>) -
         .checked_add(divided_amount)
         .ok_or(SynftError::NumericalOverflowError)?;
 
+    ctx.accounts.snowball_pda_unique.close(to_account)?;
+
     Ok(())
 }
 
@@ -109,8 +110,7 @@ pub struct InitSnowballNft<'info> {
         bump
     )]
     pub snowball_nft_metadata: Box<Account<'info, SnowballNftMetadata>>,
-    /// CHECK: is not written to or read
-    pub collection_mint: UncheckedAccount<'info>,
+    pub collection_mint: Account<'info, Mint>,
     
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -139,10 +139,10 @@ pub struct UpdateSnowballNft<'info> {
 
     pub nft_mint: Account<'info, Mint>,
     pub nft_token_account: Account<'info, TokenAccount>,
+    pub collection_mint: Account<'info, Mint>,
     /// CHECK: is not written to or read
     pub nft_metadata: UncheckedAccount<'info>,
-    /// CHECK: is not written to or read
-    pub collection_mint: UncheckedAccount<'info>,
+
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -157,10 +157,16 @@ pub struct ExtractSolToUser<'info> {
     )]
     pub snowball_nft_metadata: Box<Account<'info, SnowballNftMetadata>>,
 
+    #[account(
+        mut,
+        seeds = [SNOWBALL_NFT_UNIQUE_SEED, nft_mint.key().as_ref()], 
+        bump
+    )]
+    pub snowball_pda_unique: Box<Account<'info, SnowballNftUnique>>,
+    pub nft_mint: Account<'info, Mint>,
+    pub collection_mint: Account<'info, Mint>,
     /// CHECK: is not written to or read
     pub nft_metadata: UncheckedAccount<'info>,
-    /// CHECK: is not written to or read
-    pub collection_mint: UncheckedAccount<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
 }
