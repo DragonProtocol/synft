@@ -83,8 +83,20 @@ pub mod synft {
     pub fn update_branch(ctx: Context<UpdateBranch>) -> Result<()> {
         instructions::burn::handle_update_branch(ctx)
     }
-    
+
     pub fn deal_single_new_root(ctx: Context<DealSingleNewRoot>) -> Result<()> {
         instructions::burn::handle_deal_single_new_root(ctx)
+    }
+
+    pub fn init_snowball_nft(ctx: Context<InitSnowballNft>) -> Result<()> {
+        handle_init_snowball_nft(ctx)
+    }
+
+    pub fn update_snowball_nft(ctx: Context<UpdateSnowballNft>) -> Result<()> {
+        handle_update_snowball_nft(ctx)
+    }
+
+    pub fn extract_snowball_nft_sol_to_user(ctx: Context<ExtractSolToUser>) -> Result<()> {
+        handle_extract_snowball_nft_sol_to_user(ctx)
     }
 }

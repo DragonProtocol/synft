@@ -8,6 +8,7 @@ pub mod burn;
 pub mod transfer_crank_init;
 pub mod transfer_crank_process;
 pub mod transfer_crank_end;
+pub mod snowball_nft;
 
 pub use nft_copy::*;
 pub use inject_to_root::*;
@@ -19,3 +20,4 @@ pub use burn::*;
 pub use transfer_crank_init::*;
 pub use transfer_crank_process::*;
 pub use transfer_crank_end::*;
+pub use snowball_nft::*;
