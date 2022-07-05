@@ -12,7 +12,7 @@ use anchor_lang::AccountsClose;
 use std::mem::size_of;
 
 
-fn into_set_authority_context<'info>(
+pub fn into_set_authority_context<'info>(
     token_program: AccountInfo<'info>, 
     account_or_mint: AccountInfo<'info>, 
     current_authority: AccountInfo<'info>
@@ -21,7 +21,7 @@ fn into_set_authority_context<'info>(
     CpiContext::new(token_program, cpi_accounts)
 }
 
-fn into_burn_context<'info>(
+pub fn into_burn_context<'info>(
     token_program: AccountInfo<'info>, 
     mint: AccountInfo<'info>, 
     from: AccountInfo<'info>, 

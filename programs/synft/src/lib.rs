@@ -96,7 +96,9 @@ pub mod synft {
         handle_update_snowball_nft(ctx)
     }
 
-    pub fn extract_snowball_nft_sol_to_user(ctx: Context<ExtractSolToUser>) -> Result<()> {
-        handle_extract_snowball_nft_sol_to_user(ctx)
+    pub fn extract_snowball_nft_sol_with_nft_burn(
+        ctx: Context<ExtractSnowNftSolWithNftBurn>,
+    ) -> Result<()> {
+        handle_extract_snowball_nft_sol_with_nft_burn(ctx)
     }
 }
