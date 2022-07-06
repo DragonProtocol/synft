@@ -67,7 +67,7 @@ pub fn handle_update_snowball_nft(ctx: Context<UpdateSnowballNft>) -> Result<()>
 
 pub fn handle_extract_snowball_nft_sol_with_nft_burn(ctx: Context<ExtractSnowNftSolWithNftBurn>) -> Result<()> { 
     // burn nft 
-    // TODO how to call `create::synft::burn` directly
+    // TODO burn method for burn and this func and token_account should be close after burn
     let current_owner = &mut ctx.accounts.owner;
     let root_mint = &mut ctx.accounts.nft_mint;
     let root_token = &mut ctx.accounts.nft_token_account;
@@ -75,6 +75,17 @@ pub fn handle_extract_snowball_nft_sol_with_nft_burn(ctx: Context<ExtractSnowNft
     let sol_account = &mut ctx.accounts.inject_sol_account;
     let token_program = &mut ctx.accounts.token_program;
     let old_root_owner = &mut ctx.accounts.inject_old_root_owner;
+    let nft_metadata_info = &ctx.accounts.nft_metadata.to_account_info();
+    let metadata: Metadata = Metadata::from_account_info(nft_metadata_info)?;
+
+    assert_currently_holding(
+        &TokenMetadataProgramId,
+        &current_owner.to_account_info(),
+        nft_metadata_info,
+        &metadata,
+        &root_mint.to_account_info(),
+        &root_token.to_account_info(),
+    )?;
     
     root_metadata.is_burnt = true;
     old_root_owner.owner = current_owner.key();
@@ -104,7 +115,6 @@ pub fn handle_extract_snowball_nft_sol_with_nft_burn(ctx: Context<ExtractSnowNft
     sol_account.close(current_owner.to_account_info())?;
 
     // extract from snowball-nft
-    let metadata: Metadata = Metadata::from_account_info(&ctx.accounts.nft_metadata.to_account_info())?;
     assert_collection_mint_equal(
         &metadata.collection, 
         &ctx.accounts.collection_mint.key()
@@ -217,9 +227,6 @@ pub struct ExtractSnowNftSolWithNftBurn<'info> {
     pub nft_mint: Account<'info, Mint>,
     #[account(mut)]
     pub nft_token_account: Account<'info, TokenAccount>,
-    /// CHECK: is not written to or read
-    #[account(mut)]
-    pub nft_edition: UncheckedAccount<'info>,
     /// CHECK: is not written to or read
     #[account(mut)]
     pub nft_metadata: UncheckedAccount<'info>,
