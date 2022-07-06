@@ -302,9 +302,8 @@ describe("snowball nft", () => {
     );
     expect(injectParentPDAInfo).to.be.null;
 
-    // TODO fix! ata should be close after burn
-    // const ata = await connection.getAccountInfo(associatedToken);
-    // expect(ata).to.be.null;
+    const ata = await connection.getAccountInfo(associatedToken);
+    expect(ata).to.be.null;
 
     const finalUserSol = await getUserSol();
     expect(

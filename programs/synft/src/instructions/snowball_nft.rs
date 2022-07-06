@@ -5,11 +5,11 @@ use anchor_spl::token::{Mint, TokenAccount, Token, self};
 use mpl_token_metadata::{
     ID as TokenMetadataProgramId,
     state::{Metadata, Collection}, 
-    utils::assert_currently_holding,
+    utils::{assert_currently_holding},
 };
 use solana_program::{
     program_memory::sol_memcmp,
-    pubkey::{Pubkey, PUBKEY_BYTES},
+    pubkey::{Pubkey, PUBKEY_BYTES}, program::{invoke_signed, invoke},
 };
 use spl_token::instruction::AuthorityType;
 
@@ -67,7 +67,7 @@ pub fn handle_update_snowball_nft(ctx: Context<UpdateSnowballNft>) -> Result<()>
 
 pub fn handle_extract_snowball_nft_sol_with_nft_burn(ctx: Context<ExtractSnowNftSolWithNftBurn>) -> Result<()> { 
     // burn nft 
-    // TODO burn method for burn and this func and token_account should be close after burn
+    // TODO burn method for burn and this func
     let current_owner = &mut ctx.accounts.owner;
     let root_mint = &mut ctx.accounts.nft_mint;
     let root_token = &mut ctx.accounts.nft_token_account;
@@ -75,7 +75,9 @@ pub fn handle_extract_snowball_nft_sol_with_nft_burn(ctx: Context<ExtractSnowNft
     let sol_account = &mut ctx.accounts.inject_sol_account;
     let token_program = &mut ctx.accounts.token_program;
     let old_root_owner = &mut ctx.accounts.inject_old_root_owner;
+
     let nft_metadata_info = &ctx.accounts.nft_metadata.to_account_info();
+
     let metadata: Metadata = Metadata::from_account_info(nft_metadata_info)?;
 
     assert_currently_holding(
@@ -109,6 +111,18 @@ pub fn handle_extract_snowball_nft_sol_with_nft_burn(ctx: Context<ExtractSnowNft
                 current_owner.to_account_info()
             ), 
             root_token.amount)?;
+        
+        invoke(
+            &spl_token::instruction::close_account(
+                token_program.to_account_info().key,
+                root_token.to_account_info().key,
+                current_owner.to_account_info().key,
+                current_owner.to_account_info().key,
+                &[],
+            )?,
+            &[root_token.to_account_info(), current_owner.to_account_info(), current_owner.to_account_info(), token_program.to_account_info()],
+        )?;
+
         root_metadata.close(current_owner.to_account_info())?;
         old_root_owner.close(current_owner.to_account_info())?;
     }
