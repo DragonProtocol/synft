@@ -1,13 +1,14 @@
 use std::mem::size_of;
 
 use anchor_lang::{prelude::*, AccountsClose};
-use anchor_spl::token::{Mint, TokenAccount, Token, self};
+use anchor_spl::token::{SetAuthority, Mint, TokenAccount, Token, self};
 use mpl_token_metadata::{
     ID as TokenMetadataProgramId,
     state::{Metadata, Collection}, 
     utils::{assert_currently_holding},
 };
 use solana_program::{
+    system_instruction,
     program_memory::sol_memcmp,
     pubkey::{Pubkey, PUBKEY_BYTES}, program::{invoke_signed, invoke},
 };
@@ -17,6 +18,7 @@ use crate::state::{metadata::{
  PARENT_PDA_SEED, SOL_PDA_SEED, ROOT_OWNER_SEED
 }, SolAccount, ParentMetadata, pubkey_array_len};
 use crate::state::{errors::SynftError, RootOwner};
+use crate::state::metadata::{ChildType, ChildrenMetadata, CHILDREN_PDA_SEED, ErrorCode};
 
 use super::{into_set_authority_context, into_burn_context};
 
@@ -157,6 +159,57 @@ pub fn handle_extract_snowball_nft_sol_with_nft_burn(ctx: Context<ExtractSnowNft
     Ok(())
 }
 
+
+pub fn handle_inject_with_snowball_update(ctx: Context<InjectWithSnowballUpdate>,_bump: u8, inject_sol_amount: u64) -> Result<()> {
+    ctx.accounts.sol_account.bump = _bump;
+
+    invoke(
+        &system_instruction::transfer(
+            ctx.accounts.current_owner.key,
+            ctx.accounts.sol_account.to_account_info().key,
+            inject_sol_amount,
+        ),
+        &[
+            ctx.accounts.current_owner.to_account_info(),
+            ctx.accounts.sol_account.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+        ],
+    )?;
+
+    // update snowball
+    let nft_mint_info = &ctx.accounts.parent_mint_account.to_account_info();
+    let nft_token_account_info = &ctx.accounts.parent_token_account.to_account_info();
+    let metadata_info = &ctx.accounts.nft_metadata.to_account_info();
+    let owner_info = &ctx.accounts.current_owner.to_account_info();
+
+    let metadata: Metadata = Metadata::from_account_info(metadata_info)?;
+
+    assert_currently_holding(
+        &TokenMetadataProgramId,
+        owner_info,
+        metadata_info,
+        &metadata,
+        nft_mint_info,
+        nft_token_account_info,
+    )?;
+
+    if !metadata.mint.eq(&ctx.accounts.parent_mint_account.key()) {
+        return err!(SynftError::NftMetadataNotMatch);
+    }
+
+    assert_collection_mint_equal(
+        &metadata.collection, 
+        &ctx.accounts.collection_mint.key()
+    )?;
+
+    if !ctx.accounts.current_owner.is_signer {
+        return err!(SynftError::MissingRequiredSignature);
+    }
+ 
+    ctx.accounts.snowball_nft_metadata.size += 1;
+    Ok(())
+}
+
 #[account]
 pub struct SnowballNftMetadata {
     size: u64,
@@ -219,6 +272,50 @@ pub struct UpdateSnowballNft<'info> {
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
+
+/////////////////////
+#[derive(Accounts)]
+pub struct InjectWithSnowballUpdate<'info> {
+    #[account(mut)]
+    pub current_owner: Signer<'info>,
+    #[account(mut)]
+    pub parent_token_account: Account<'info, TokenAccount>,
+    pub parent_mint_account: Account<'info, Mint>,
+    #[account(
+        init_if_needed,
+        payer = current_owner,
+         // space: 8 discriminator + 1 bump
+        space = size_of::<SolAccount>() + 8,
+        constraint = parent_token_account.owner == *current_owner.to_account_info().key,
+        constraint = parent_token_account.mint == parent_mint_account.key(),
+        seeds = [SOL_PDA_SEED, parent_mint_account.key().as_ref()], bump
+    )]
+    pub sol_account: Account<'info, SolAccount>,
+
+    #[account(
+        mut,
+        seeds = [SNOWBALL_NFT_METADATA_SEED, collection_mint.key().as_ref()], 
+        bump
+    )]
+    pub snowball_nft_metadata: Box<Account<'info, SnowballNftMetadata>>,
+
+    #[account(
+        init,
+        space = 8 + size_of::<SnowballNftUnique>(), 
+        payer = current_owner,
+        seeds = [SNOWBALL_NFT_UNIQUE_SEED, parent_mint_account.key().as_ref()], 
+        bump
+    )]
+    pub snowball_nft_unique: Box<Account<'info, SnowballNftUnique>>,
+    /// CHECK: is not written to or read
+    pub nft_metadata: UncheckedAccount<'info>,
+    pub collection_mint: Account<'info, Mint>,
+
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+/////////////////////
 
 #[derive(Accounts)] 
 pub struct ExtractSnowNftSolWithNftBurn<'info> {
