@@ -101,4 +101,10 @@ pub mod synft {
     ) -> Result<()> {
         handle_extract_snowball_nft_sol_with_nft_burn(ctx)
     }
+
+    pub fn inject_with_snowball_update(ctx: Context<InjectWithSnowballUpdate>, bump: u8,
+        inject_sol_amount: u64
+    ) -> Result<()> {
+        handle_inject_with_snowball_update(ctx, bump, inject_sol_amount)
+    }
 }

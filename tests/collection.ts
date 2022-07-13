@@ -134,7 +134,7 @@ describe("snowball nft", () => {
     getSnowballSol();
   });
 
-  it("update collection size", async () => {
+  it.skip("update collection size", async () => {
     const associatedToken = findAssociatedTokenAccountPda(
       nftMint.publicKey,
       payer.publicKey
@@ -181,6 +181,58 @@ describe("snowball nft", () => {
     }
   });
 
+  it("injectSol with update snowball nft size", async () => {
+    const [injectSolPDA, solBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [Buffer.from(InjectSolSeed), nftMint.publicKey.toBuffer()],
+        program.programId
+      );
+    const nftAssociatedToken = findAssociatedTokenAccountPda(
+      nftMint.publicKey,
+      payer.publicKey
+    );
+    const nftMetadata = findMetadataPda(nftMint.publicKey);
+    const [snowballNftUnique] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from(SnowballNftUniqueSeed), nftMint.publicKey.toBuffer()],
+      program.programId
+    );
+    const [snowballAccount] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(SnowballMftMetadataSeed),
+        collectionMint.publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+
+    await program.methods
+      .injectWithSnowballUpdate(solBump, injectAmount)
+      .accounts({
+        parentMintAccount: nftMint.publicKey,
+        solAccount: injectSolPDA,
+        currentOwner: payer.publicKey,
+        parentTokenAccount: nftAssociatedToken,
+        nftMetadata: nftMetadata,
+        snowballNftMetadata: snowballAccount,
+        snowballNftUnique: snowballNftUnique,
+        collectionMint: collectionMint.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .signers([payer])
+      .rpc();
+    const injectSolPdaAccountInfo = await connection.getAccountInfo(
+      injectSolPDA
+    );
+    expect(injectSolPdaAccountInfo.lamports > LAMPORTS_PER_SOL).to.be.ok;
+    const pdaAccountData = await program.account.snowballNftMetadata.fetch(
+      snowballAccount
+    );
+
+    expect(pdaAccountData.size.toNumber()).to.equal(1);
+    expect(pdaAccountData.collectionMint.equals(collectionMint.publicKey)).to
+      .ok;
+  });
+
   it("transfer sol to snowball-nft for simulate sell fee", async () => {
     const tx = new Transaction();
     tx.add(
@@ -196,7 +248,7 @@ describe("snowball nft", () => {
     expect(userSol * LAMPORTS_PER_SOL + LAMPORTS_PER_SOL < initAmount).to.be.ok;
   });
 
-  it("inject sol", async () => {
+  it.skip("inject sol", async () => {
     const [injectSolPDA, solBump] =
       await anchor.web3.PublicKey.findProgramAddress(
         [Buffer.from(InjectSolSeed), nftMint.publicKey.toBuffer()],
